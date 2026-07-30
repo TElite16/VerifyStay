@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Property - VerifyStay</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a73e8">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        .form-container { max-width: 700px; margin: 40px auto; padding: 0 20px; }
+        .form-container h2 { margin-bottom: 8px; }
+        .form-container .subtitle { color: #666; margin-bottom: 24px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 6px; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;
+        }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-group .help-text { font-size: 13px; color: #666; margin-top: 4px; }
+        #map { height: 300px; border-radius: 8px; border: 1px solid #ddd; }
+        .file-upload-area {
+            border: 2px dashed #ddd; padding: 30px; text-align: center; border-radius: 8px;
+            cursor: pointer; transition: border-color 0.3s;
+        }
+        .file-upload-area:hover { border-color: #1a73e8; }
+        .file-upload-area input { display: none; }
+        .preview-image { max-width: 100%; max-height: 150px; margin: 6px; border-radius: 8px; }
+        .btn-submit { width: 100%; padding: 14px; font-size: 18px; margin-top: 12px; }
+        .success-message { background: #e8f5e9; color: #2e7d32; padding: 16px; border-radius: 8px; display: none; }
+        .error-message { background: #ffebee; color: #c62828; padding: 16px; border-radius: 8px; display: none; margin-bottom: 16px; }
+        .upload-progress { font-size: 14px; color: #1a73e8; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">🏠 VerifyStay</div>
+            <div class="nav-links">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="feed.html">Browse</a>
+                <a href="#" onclick="logout()" class="btn btn-outline">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="form-container">
+        <h2>🏠 List Your Property</h2>
+        <p class="subtitle">Add details, location, and documents to get verified</p>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message">
+            ✅ Property listed successfully! It will appear in search after verification.
+        </div>
+
+        <form id="propertyForm">
+            <div class="form-group">
+                <label>Property Title *</label>
+                <input type="text" id="title" placeholder="e.g., 3-Bedroom Flat in Surulere" required>
+            </div>
+
+            <div class="form-group">
+                <label>Property Type *</label>
+                <select id="propertyType" required>
+                    <option value="">Select type...</option>
+                    <option value="flat">Flat</option>
+                    <option value="house">House</option>
+                    <option value="duplex">Duplex</option>
+                    <option value="bungalow">Bungalow</option>
+                    <option value="studio">Studio</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>City *</label>
+                <select id="city" required>
+                    <option value="">Select city...</option>
+                    <option value="Lagos">Lagos</option>
+                    <option value="Ibadan">Ibadan</option>
+                    <option value="Abuja">Abuja</option>
+                    <option value="Osogbo">Osogbo</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Full Address *</label>
+                <input type="text" id="address" placeholder="Street, area, landmark" required>
+                <div class="help-text">Enter the exact address for map pin placement</div>
+            </div>
+
+            <div class="form-group">
+                <label>Annual Rent (₦) *</label>
+                <input type="number" id="price" placeholder="e.g., 2500000" required>
+            </div>
+
+            <div class="form-group">
+                <label>Bedrooms</label>
+                <input type="number" id="bedrooms" placeholder="e.g., 3" min="1">
+            </div>
+
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="description" placeholder="Describe your property... amenities, nearby facilities, etc."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>📍 Drop Pin on Map *</label>
+                <div id="map"></div>
+                <div class="help-text">Click on the map to pin your property's exact location</div>
+                <input type="hidden" id="latitude">
+                <input type="hidden" id="longitude">
+            </div>
+
+            <div class="form-group">
+                <label>📸 Upload Photos</label>
+                <div class="file-upload-area" id="uploadArea">
+                    <p>📁 Click to upload property photos</p>
+                    <p style="font-size: 13px; color: #666;">Up to 5 photos</p>
+                    <input type="file" id="fileInput" accept="image/*" multiple>
+                </div>
+                <div id="filePreview"></div>
+                <div class="help-text">Photos help tenants trust your listing</div>
+            </div>
+
+            <div class="form-group">
+                <label>📄 Upload Document (Utility Bill or Land Document) *</label>
+                <div class="file-upload-area" id="docUploadArea">
+                    <p>📄 Click to upload document</p>
+                    <p style="font-size: 13px; color: #666;">PHCN bill, water rate, C of O, or Deed of Assignment</p>
+                    <input type="file" id="docInput" accept="image/*,application/pdf">
+                </div>
+                <div id="docPreview"></div>
+                <div class="help-text">Documents are reviewed manually before your listing is marked verified</div>
+            </div>
+
+            <div id="uploadProgress" class="upload-progress"></div>
+
+            <button type="submit" class="btn btn-primary btn-submit" id="submitBtn">List Property (Free)</button>
+            <p style="text-align: center; margin-top: 12px; color: #666; font-size: 14px;">
+                Your listing goes to "Pending Review" until manually verified.
+            </p>
+        </form>
+    </div>
+
+    <!-- Firebase SDKs (compat) — must load before firebase-config.js on EVERY page -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="cloudinary-config.js"></script>
+    <script src="app.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="post-property.js"></script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VerifyStay — Rent Without Regret</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a73e8">
+    <link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">🏠 VerifyStay</div>
+            <div class="nav-links">
+                <a href="#how-it-works">How It Works</a>
+                <a href="#testimonials">Testimonials</a>
+                <a href="login.html" class="btn btn-outline">Login</a>
+                <a href="login.html" class="btn btn-primary">Sign Up Free</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <h1>Rent Without Regret</h1>
+            <p>Find verified properties in Lagos, Ibadan, and Abuja. No scams. No surprises.</p>
+            <div class="search-box">
+                <input type="text" placeholder="Search for houses in Lagos, Ibadan, Abuja..." id="searchInput">
+                <button class="btn btn-primary" onclick="searchProperties()">🔍 Search</button>
+            </div>
+            <div class="user-types">
+                <a href="login.html?role=tenant" class="user-card">
+                    <span>👤</span>
+                    <h3>I'm a Tenant</h3>
+                    <p>Find your next home</p>
+                </a>
+                <a href="login.html?role=landlord" class="user-card">
+                    <span>🏠</span>
+                    <h3>I'm a Landlord</h3>
+                    <p>List your property</p>
+                </a>
+                <a href="login.html?role=agent" class="user-card">
+                    <span>🤝</span>
+                    <h3>I'm an Agent</h3>
+                    <p>Manage properties</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="featured" id="properties">
+        <div class="container">
+            <h2>🔥 Featured Properties</h2>
+            <div class="property-grid" id="propertyGrid"></div>
+        </div>
+    </section>
+
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <h2>How VerifyStay Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <h3>Sign Up Free</h3>
+                    <p>Create your account with phone verification</p>
+                </div>
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <h3>Find Properties</h3>
+                    <p>Search by location, check the map pin, view documents</p>
+                </div>
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <h3>Connect Through Agent</h3>
+                    <p>All communication routes through the listing agent</p>
+                </div>
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <h3>Rate & Review</h3>
+                    <p>Build your reputation with star ratings</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="testimonials" id="testimonials">
+        <div class="container">
+            <h2>What Our Users Say</h2>
+            <div class="testimonial-grid">
+                <div class="testimonial-card">
+                    <p>"Found my apartment in 2 days. No agent stress!"</p>
+                    <h4>— Chidi, Lagos</h4>
+                    <span>★★★★★</span>
+                </div>
+                <div class="testimonial-card">
+                    <p>"My landlord fixed the AC within 3 days. Amazing."</p>
+                    <h4>— Amina, Abuja</h4>
+                    <span>★★★★★</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>© 2026 VerifyStay. Built for Nigerians.</p>
+            <div class="footer-links">
+                <a href="#">Terms</a>
+                <a href="#">Privacy</a>
+                <a href="#">Contact</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase SDKs (compat) — must load before firebase-config.js on EVERY page -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>

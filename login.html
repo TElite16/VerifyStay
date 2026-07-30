@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up / Login - VerifyStay</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a73e8">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        .auth-container {
+            max-width: 450px;
+            margin: 40px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .auth-container h2 { text-align: center; margin-bottom: 8px; }
+        .auth-container .subtitle { text-align: center; color: #666; margin-bottom: 24px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 4px; font-weight: 600; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;
+        }
+        .role-selector { display: flex; gap: 12px; margin-bottom: 16px; }
+        .role-selector button {
+            flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px;
+            background: white; cursor: pointer; transition: all 0.3s;
+        }
+        .role-selector button.active { border-color: #1a73e8; background: #e8f0fe; color: #1a73e8; }
+        .btn-full { width: 100%; padding: 14px; font-size: 18px; }
+        .switch-text { text-align: center; margin-top: 16px; color: #666; }
+        .switch-text a { color: #1a73e8; cursor: pointer; text-decoration: none; }
+        .error-message {
+            color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 8px;
+            margin-bottom: 16px; display: none;
+        }
+        .success-message {
+            color: #2e7d32; background: #e8f5e9; padding: 10px; border-radius: 8px;
+            margin-bottom: 16px; display: none;
+        }
+        .phone-verification { background: #f8f9fa; padding: 16px; border-radius: 8px; margin: 16px 0; }
+        .phone-verification .otp-row { display: flex; gap: 12px; margin-top: 12px; }
+        .phone-verification .otp-row input { flex: 1; }
+        #recaptcha-container { margin: 12px 0; }
+        .verified-badge { color: #2e7d32; font-weight: 600; display: none; margin-top: 8px; }
+        .btn-verify {
+            background: #1a73e8; color: white; border: none; padding: 10px 20px;
+            border-radius: 8px; cursor: pointer;
+        }
+        .btn-verify:hover { background: #1557b0; }
+        .btn-verify:disabled { background: #999; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h2>🏠 VerifyStay</h2>
+        <p class="subtitle">Rent Without Regret</p>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <div class="role-selector" id="roleSelector">
+            <button type="button" class="active" data-role="tenant">👤 Tenant</button>
+            <button type="button" data-role="landlord">🏠 Landlord</button>
+            <button type="button" data-role="agent">🤝 Agent</button>
+        </div>
+
+        <form id="authForm">
+            <div id="signupFields">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="fullName" placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="phone" placeholder="080xxxxxxxx">
+                    <small style="color:#666;display:block;margin-top:4px;">We'll send a verification code to this number</small>
+                </div>
+
+                <div class="phone-verification" id="phoneVerification">
+                    <p><strong>📱 Verify your phone number</strong></p>
+                    <div id="recaptcha-container"></div>
+                    <button type="button" class="btn-verify" id="sendOtpBtn" disabled>Send Verification Code</button>
+                    <div class="otp-row" style="display:none;" id="otpRow">
+                        <input type="text" id="otpCode" placeholder="Enter 6-digit code" maxlength="6">
+                        <button type="button" class="btn-verify" id="verifyOtpBtn">Verify</button>
+                    </div>
+                    <div id="otpStatus" style="margin-top:8px;font-size:14px;"></div>
+                    <span class="verified-badge" id="verifiedBadge">✅ Phone Verified!</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="email" placeholder="you@email.com" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="Minimum 6 characters" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" id="submitBtn" disabled>
+                Sign Up (Verify Phone First)
+            </button>
+        </form>
+
+        <p class="switch-text">
+            <span id="toggleText">Already have an account?</span>
+            <a id="toggleLink">Login</a>
+        </p>
+    </div>
+
+    <!-- Firebase SDKs (compat) — must load before firebase-config.js on EVERY page -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="login.js"></script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>

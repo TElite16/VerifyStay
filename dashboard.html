@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - VerifyStay</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a73e8">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        .dashboard { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .dashboard-header {
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; margin-bottom: 30px; gap: 12px;
+        }
+        .role-badge {
+            background: #1a73e8; color: white; padding: 4px 16px; border-radius: 20px;
+            font-size: 14px; text-transform: capitalize; display: inline-block;
+        }
+        .quick-actions {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px; margin-bottom: 30px;
+        }
+        .action-card {
+            background: white; padding: 24px; border-radius: 12px; text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.3s;
+            text-decoration: none; color: #333;
+        }
+        .action-card:hover { transform: translateY(-5px); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .action-card .icon { font-size: 40px; display: block; margin-bottom: 8px; }
+        .listing-section { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .listing-section h3 { margin-bottom: 16px; }
+        .listing-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid #f0f0f0; flex-wrap: wrap; gap: 8px;
+        }
+        .listing-item:last-child { border-bottom: none; }
+        .status-badge { padding: 4px 12px; border-radius: 12px; font-size: 12px; }
+        .status-active { background: #e8f5e9; color: #2e7d32; }
+        .status-pending { background: #fff3e0; color: #e65100; }
+        .status-flagged { background: #ffebee; color: #c62828; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">🏠 VerifyStay</div>
+            <div class="nav-links">
+                <a href="feed.html">Browse Properties</a>
+                <a href="profile.html">Profile</a>
+                <a href="#" onclick="logout()" class="btn btn-outline">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <div>
+                <h1>Welcome, <span id="userName">User</span></h1>
+                <p class="role-badge" id="userRole">tenant</p>
+            </div>
+            <div>
+                <span id="userRating">⭐ 0.0</span>
+                <span id="userFlags" style="margin-left: 16px; color: #c62828;">🚩 0</span>
+            </div>
+        </div>
+
+        <div class="quick-actions" id="quickActions"></div>
+
+        <div class="listing-section">
+            <h3 id="listingTitle">Your Properties</h3>
+            <div id="listingContainer">
+                <p style="color: #999;">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs (compat) — must load before firebase-config.js on EVERY page -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+    <script src="dashboard.js"></script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>

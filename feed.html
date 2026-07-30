@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Properties - VerifyStay</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a73e8">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        .feed-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .feed-filters {
+            display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px;
+            background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .feed-filters select, .feed-filters input {
+            padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">🏠 VerifyStay</div>
+            <div class="nav-links">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="#" onclick="logout()" class="btn btn-outline">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="feed-container">
+        <h1>Browse Properties</h1>
+        <div class="feed-filters">
+            <input type="text" id="searchBox" placeholder="Search by title or area...">
+            <select id="cityFilter">
+                <option value="">All Cities</option>
+                <option value="Lagos">Lagos</option>
+                <option value="Ibadan">Ibadan</option>
+                <option value="Abuja">Abuja</option>
+                <option value="Osogbo">Osogbo</option>
+                <option value="Other">Other</option>
+            </select>
+            <button class="btn btn-primary" onclick="applyFilters()">Filter</button>
+        </div>
+
+        <div class="property-grid" id="feedGrid">
+            <p style="color:#999;">Loading properties...</p>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs (compat) — must load before firebase-config.js on EVERY page -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+    <script src="feed.js"></script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>
