@@ -1,24 +1,21 @@
 // =====================
-// VERIFYSTAY - Login/Signup Logic (Phone OTP + Firestore write)
-// Uses the global `auth` and `db` from firebase-config.js
+// VERIFYSTAY - Login/Signup Logic
+// NOTE: Firebase phone-number OTP now requires a paid Blaze billing account
+// (Google changed this in Sept 2024), so v1 no longer tries to send SMS
+// codes from the browser. Phone number is still collected and shown to
+// admin — it gets confirmed by a real phone call as part of manual account
+// review, the same way property documents are manually reviewed. Free
+// Firebase email verification is used instead, since that has no cost.
 // =====================
 
 let selectedRole = 'tenant';
 let isSignupFlow = true;
-let confirmationResult = null;
-let isPhoneVerified = false;
-let formattedPhone = '';
 
 const errorDiv = document.getElementById('errorMessage');
 const successDiv = document.getElementById('successMessage');
 const signupFields = document.getElementById('signupFields');
-const phoneVerification = document.getElementById('phoneVerification');
-const sendOtpBtn = document.getElementById('sendOtpBtn');
-const verifyOtpBtn = document.getElementById('verifyOtpBtn');
-const otpRow = document.getElementById('otpRow');
-const otpCode = document.getElementById('otpCode');
-const otpStatus = document.getElementById('otpStatus');
-const verifiedBadge = document.getElementById('verifiedBadge');
+const confirmPasswordGroup = document.getElementById('confirmPasswordGroup');
+const pwMatchStatus = document.getElementById('pwMatchStatus');
 const submitBtn = document.getElementById('submitBtn');
 const toggleLink = document.getElementById('toggleLink');
 const toggleText = document.getElementById('toggleText');
@@ -26,6 +23,7 @@ const fullNameInput = document.getElementById('fullName');
 const phoneInput = document.getElementById('phone');
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
+const confirmPasswordInput = document.getElementById('confirmPassword');
 
 // ---------------- Pre-fill role from ?role= query param ----------------
 const urlParams = new URLSearchParams(window.location.search);
@@ -45,115 +43,52 @@ document.querySelectorAll('.role-selector button').forEach(btn => {
     });
 });
 
+// ---------------- Show/hide password toggles ----------------
+document.querySelectorAll('.pw-toggle').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const target = document.getElementById(this.dataset.target);
+        if (target.type === 'password') {
+            target.type = 'text';
+            this.textContent = '🙈';
+        } else {
+            target.type = 'password';
+            this.textContent = '👁️';
+        }
+    });
+});
+
+// ---------------- Live confirm-password match check ----------------
+function checkPasswordsMatch() {
+    if (!isSignupFlow) return true;
+    if (!confirmPasswordInput.value) {
+        pwMatchStatus.textContent = '';
+        return false;
+    }
+    if (passwordInput.value === confirmPasswordInput.value) {
+        pwMatchStatus.textContent = '✅ Passwords match';
+        pwMatchStatus.style.color = '#2e7d32';
+        return true;
+    } else {
+        pwMatchStatus.textContent = '❌ Passwords do not match';
+        pwMatchStatus.style.color = '#c62828';
+        return false;
+    }
+}
+passwordInput.addEventListener('input', checkPasswordsMatch);
+confirmPasswordInput.addEventListener('input', checkPasswordsMatch);
+
 // ---------------- Toggle login / signup ----------------
 toggleLink.addEventListener('click', function () {
     isSignupFlow = !isSignupFlow;
     signupFields.style.display = isSignupFlow ? 'block' : 'none';
+    confirmPasswordGroup.style.display = isSignupFlow ? 'block' : 'none';
     toggleText.textContent = isSignupFlow ? 'Already have an account?' : 'New to VerifyStay?';
     toggleLink.textContent = isSignupFlow ? 'Login' : 'Sign Up';
+    submitBtn.textContent = isSignupFlow ? 'Sign Up' : 'Login';
     hideError();
     hideSuccess();
-    resetPhoneVerification();
-    updateSubmitButton();
+    pwMatchStatus.textContent = '';
 });
-
-// ---------------- reCAPTCHA + phone OTP ----------------
-window.addEventListener('load', function () {
-    try {
-        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-            size: 'normal',
-            callback: function () { sendOtpBtn.disabled = false; },
-            'expired-callback': function () { sendOtpBtn.disabled = true; }
-        });
-        window.recaptchaVerifier.render();
-    } catch (e) {
-        console.error('reCAPTCHA init error:', e);
-    }
-});
-
-sendOtpBtn.addEventListener('click', async function () {
-    let phone = phoneInput.value.trim();
-
-    if (!phone) {
-        showStatus('Please enter your phone number.', 'error');
-        return;
-    }
-
-    // Format for Nigeria (+234)
-    if (phone.startsWith('0')) {
-        formattedPhone = '+234' + phone.substring(1);
-    } else if (phone.startsWith('+')) {
-        formattedPhone = phone;
-    } else {
-        formattedPhone = '+234' + phone;
-    }
-
-    showStatus('Sending verification code...', 'info');
-    sendOtpBtn.disabled = true;
-
-    try {
-        confirmationResult = await auth.signInWithPhoneNumber(formattedPhone, window.recaptchaVerifier);
-        otpRow.style.display = 'flex';
-        sendOtpBtn.textContent = 'Code Sent ✓';
-        showStatus('✅ Verification code sent to ' + formattedPhone, 'success');
-        otpCode.focus();
-    } catch (error) {
-        console.error('Phone auth error:', error);
-        showStatus('Failed to send code: ' + error.message, 'error');
-        sendOtpBtn.disabled = false;
-    }
-});
-
-verifyOtpBtn.addEventListener('click', async function () {
-    const code = otpCode.value.trim();
-
-    if (!code || code.length < 6) {
-        showStatus('Please enter the 6-digit code.', 'error');
-        return;
-    }
-
-    showStatus('Verifying code...', 'info');
-
-    try {
-        await confirmationResult.confirm(code);
-        isPhoneVerified = true;
-        verifiedBadge.style.display = 'inline-block';
-        otpRow.style.display = 'none';
-        sendOtpBtn.style.display = 'none';
-        showStatus('✅ Phone verified successfully!', 'success');
-        updateSubmitButton();
-    } catch (error) {
-        console.error('OTP verification error:', error);
-        showStatus('❌ Invalid code. Please try again.', 'error');
-        otpCode.value = '';
-        otpCode.focus();
-    }
-});
-
-function resetPhoneVerification() {
-    isPhoneVerified = false;
-    confirmationResult = null;
-    otpRow.style.display = 'none';
-    sendOtpBtn.style.display = 'inline-block';
-    sendOtpBtn.textContent = 'Send Verification Code';
-    verifiedBadge.style.display = 'none';
-    otpStatus.innerHTML = '';
-    otpCode.value = '';
-}
-
-function updateSubmitButton() {
-    if (!isSignupFlow) {
-        // Login mode: phone verification not required
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Login';
-    } else if (isPhoneVerified) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Complete Sign Up';
-    } else {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Sign Up (Verify Phone First)';
-    }
-}
 
 // ---------------- Form submit (signup / login) ----------------
 document.getElementById('authForm').addEventListener('submit', async function (e) {
@@ -174,14 +109,31 @@ document.getElementById('authForm').addEventListener('submit', async function (e
     }
 
     if (isSignupFlow) {
-        if (!isPhoneVerified) {
-            showError('Please verify your phone number before signing up.');
-            return;
-        }
         const name = fullNameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const confirmPassword = confirmPasswordInput.value;
+
         if (!name) {
             showError('Please enter your full name.');
             return;
+        }
+        if (!phone) {
+            showError('Please enter your phone number.');
+            return;
+        }
+        if (password !== confirmPassword) {
+            showError('Passwords do not match. Please re-type your password.');
+            return;
+        }
+
+        // Format for Nigeria (+234), stored for admin reference/callback
+        let formattedPhone;
+        if (phone.startsWith('0')) {
+            formattedPhone = '+234' + phone.substring(1);
+        } else if (phone.startsWith('+')) {
+            formattedPhone = phone;
+        } else {
+            formattedPhone = '+234' + phone;
         }
 
         submitBtn.disabled = true;
@@ -191,9 +143,15 @@ document.getElementById('authForm').addEventListener('submit', async function (e
             const userCredential = await auth.createUserWithEmailAndPassword(email, password);
             const user = userCredential.user;
 
+            // Free email verification link (Firebase Auth email verification
+            // has no cost, unlike SMS). Not required to use the app in v1,
+            // but gives you a second confirmation signal per account.
+            try { await user.sendEmailVerification(); } catch (e) { console.warn('Email verification send failed:', e); }
+
             // Note: `verified` starts FALSE on purpose — it only becomes true
             // once the uploaded ownership document has been manually reviewed.
-            // Phone verification alone is a lower trust tier (`phoneVerified`).
+            // `phoneVerified` also starts FALSE now — admin confirms this by
+            // calling the number directly during account review.
             await db.collection('users').doc(user.uid).set({
                 name: name,
                 email: email,
@@ -201,18 +159,22 @@ document.getElementById('authForm').addEventListener('submit', async function (e
                 role: selectedRole,
                 rating: 0,
                 flags: 0,
-                phoneVerified: true,
+                phoneVerified: false,
                 verified: false,
+                agentLevel: 1,          // agents start at Level 1, admin raises this via Firebase Console
+                landlordTier: 'new',    // 'new' -> 'established' -> 'trusted-portfolio', set by admin
+                strikeCount: 0,         // off-platform dealing / rule violations, admin increments
+                suspendedUntil: null,   // admin sets a date to temporarily suspend an account
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            showSuccess('✅ Account created! Redirecting to your dashboard...');
-            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+            showSuccess('✅ Account created! Check your email to verify it, then check your dashboard. Redirecting...');
+            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
         } catch (error) {
             console.error('Signup error:', error);
             showError('Signup failed: ' + error.message);
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Complete Sign Up';
+            submitBtn.textContent = 'Sign Up';
         }
     } else {
         submitBtn.disabled = true;
@@ -243,10 +205,3 @@ function showSuccess(message) {
 }
 function hideError() { errorDiv.style.display = 'none'; }
 function hideSuccess() { successDiv.style.display = 'none'; }
-function showStatus(message, type) {
-    otpStatus.textContent = message;
-    otpStatus.style.color = type === 'error' ? '#c62828' : type === 'success' ? '#2e7d32' : '#0d47a1';
-}
-
-// Initialize button state
-updateSubmitButton();
