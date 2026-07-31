@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up / Login - VerifyStay</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1a73e8">
+    <meta name="theme-color" content="#0F2C59">
     <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
     <style>
         .auth-container {
             max-width: 450px;
@@ -29,10 +33,10 @@
             flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px;
             background: white; cursor: pointer; transition: all 0.3s;
         }
-        .role-selector button.active { border-color: #1a73e8; background: #e8f0fe; color: #1a73e8; }
+        .role-selector button.active { border-color: #0F2C59; background: #e8f0fe; color: #0F2C59; }
         .btn-full { width: 100%; padding: 14px; font-size: 18px; }
         .switch-text { text-align: center; margin-top: 16px; color: #666; }
-        .switch-text a { color: #1a73e8; cursor: pointer; text-decoration: none; }
+        .switch-text a { color: #0F2C59; cursor: pointer; text-decoration: none; }
         .error-message {
             color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 8px;
             margin-bottom: 16px; display: none;
@@ -47,16 +51,16 @@
         #recaptcha-container { margin: 12px 0; }
         .verified-badge { color: #2e7d32; font-weight: 600; display: none; margin-top: 8px; }
         .btn-verify {
-            background: #1a73e8; color: white; border: none; padding: 10px 20px;
+            background: #0F2C59; color: white; border: none; padding: 10px 20px;
             border-radius: 8px; cursor: pointer;
         }
-        .btn-verify:hover { background: #1557b0; }
+        .btn-verify:hover { background: #0A1D3D; }
         .btn-verify:disabled { background: #999; cursor: not-allowed; }
     </style>
 </head>
 <body>
     <div class="auth-container">
-        <h2>🏠 VerifyStay</h2>
+        <h2 style="display:flex; align-items:center; justify-content:center; gap:8px;"><svg width="30" height="30" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><circle cx="100" cy="100" r="96" fill="#0F2C59"/><polygon points="60,96 100,58 140,96" fill="#E8C547"/><rect x="68" y="96" width="64" height="48" rx="3" fill="#F7F8FA"/><rect x="92" y="118" width="16" height="26" rx="2" fill="#0F2C59"/><circle cx="146" cy="138" r="30" fill="#C9A227" stroke="#F7F8FA" stroke-width="5"/><path d="M133,138 L143,148 L161,127" fill="none" stroke="#F7F8FA" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg> VerifyStay</h2>
         <p class="subtitle">Rent Without Regret</p>
 
         <div id="errorMessage" class="error-message"></div>

@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Browse Properties - VerifyStay</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1a73e8">
+    <meta name="theme-color" content="#0F2C59">
     <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
     <style>
         .feed-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
         .feed-filters {
@@ -22,9 +26,10 @@
 <body>
     <nav class="navbar">
         <div class="container">
-            <div class="logo">🏠 VerifyStay</div>
+            <div class="logo"><svg width="26" height="26" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><circle cx="100" cy="100" r="96" fill="#0F2C59"/><polygon points="60,96 100,58 140,96" fill="#E8C547"/><rect x="68" y="96" width="64" height="48" rx="3" fill="#F7F8FA"/><rect x="92" y="118" width="16" height="26" rx="2" fill="#0F2C59"/><circle cx="146" cy="138" r="30" fill="#C9A227" stroke="#F7F8FA" stroke-width="5"/><path d="M133,138 L143,148 L161,127" fill="none" stroke="#F7F8FA" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg> VerifyStay</div>
             <div class="nav-links">
                 <a href="dashboard.html">Dashboard</a>
+                <a href="rules.html">Rules</a>
                 <a href="#" onclick="logout()" class="btn btn-outline">Logout</a>
             </div>
         </div>
@@ -35,11 +40,44 @@
         <div class="feed-filters">
             <input type="text" id="searchBox" placeholder="Search by title or area...">
             <select id="cityFilter">
-                <option value="">All Cities</option>
+                <option value="">All States</option>
+                <option value="Abia">Abia</option>
+                <option value="Adamawa">Adamawa</option>
+                <option value="Akwa Ibom">Akwa Ibom</option>
+                <option value="Anambra">Anambra</option>
+                <option value="Bauchi">Bauchi</option>
+                <option value="Bayelsa">Bayelsa</option>
+                <option value="Benue">Benue</option>
+                <option value="Borno">Borno</option>
+                <option value="Cross River">Cross River</option>
+                <option value="Delta">Delta</option>
+                <option value="Ebonyi">Ebonyi</option>
+                <option value="Edo">Edo</option>
+                <option value="Ekiti">Ekiti</option>
+                <option value="Enugu">Enugu</option>
+                <option value="FCT (Abuja)">FCT (Abuja)</option>
+                <option value="Gombe">Gombe</option>
+                <option value="Imo">Imo</option>
+                <option value="Jigawa">Jigawa</option>
+                <option value="Kaduna">Kaduna</option>
+                <option value="Kano">Kano</option>
+                <option value="Katsina">Katsina</option>
+                <option value="Kebbi">Kebbi</option>
+                <option value="Kogi">Kogi</option>
+                <option value="Kwara">Kwara</option>
                 <option value="Lagos">Lagos</option>
-                <option value="Ibadan">Ibadan</option>
-                <option value="Abuja">Abuja</option>
-                <option value="Osogbo">Osogbo</option>
+                <option value="Nasarawa">Nasarawa</option>
+                <option value="Niger">Niger</option>
+                <option value="Ogun">Ogun</option>
+                <option value="Ondo">Ondo</option>
+                <option value="Osun">Osun</option>
+                <option value="Oyo">Oyo</option>
+                <option value="Plateau">Plateau</option>
+                <option value="Rivers">Rivers</option>
+                <option value="Sokoto">Sokoto</option>
+                <option value="Taraba">Taraba</option>
+                <option value="Yobe">Yobe</option>
+                <option value="Zamfara">Zamfara</option>
                 <option value="Other">Other</option>
             </select>
             <button class="btn btn-primary" onclick="applyFilters()">Filter</button>

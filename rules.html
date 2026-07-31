@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Rules - VerifyStay</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0F2C59">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <style>
+        .rules-container { max-width: 760px; margin: 40px auto; padding: 0 20px; }
+        .rules-container h2 { margin-bottom: 8px; }
+        .rules-container .subtitle { color: #666; margin-bottom: 28px; }
+        .rule-block { background: #F7F8FA; border-left: 4px solid #C9A227; border-radius: 8px; padding: 20px 24px; margin-bottom: 20px; }
+        .rule-block h3 { color: #0F2C59; margin-bottom: 10px; font-family: 'Fraunces', serif; }
+        .rule-block ol, .rule-block ul { margin-left: 18px; }
+        .rule-block li { margin-bottom: 8px; line-height: 1.5; }
+        .golden-rule { background: linear-gradient(135deg, #0F2C59, #0A1D3D); color: #fff; padding: 22px 24px; border-radius: 10px; margin-bottom: 28px; text-align: center; }
+        .golden-rule strong { color: #E8C547; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo"><svg width="26" height="26" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><circle cx="100" cy="100" r="96" fill="#0F2C59"/><polygon points="60,96 100,58 140,96" fill="#E8C547"/><rect x="68" y="96" width="64" height="48" rx="3" fill="#F7F8FA"/><rect x="92" y="118" width="16" height="26" rx="2" fill="#0F2C59"/><circle cx="146" cy="138" r="30" fill="#C9A227" stroke="#F7F8FA" stroke-width="5"/><path d="M133,138 L143,148 L161,127" fill="none" stroke="#F7F8FA" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg> VerifyStay</div>
+            <div class="nav-links">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="feed.html">Browse</a>
+                <a href="rules.html">Rules</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="rules-container">
+        <h2>📜 Platform Rules</h2>
+        <p class="subtitle">Following these rules keeps everyone on VerifyStay safe and protected.</p>
+
+        <div class="golden-rule">
+            <strong>"If I meet you on the app, we deal on the app."</strong>
+            <p style="margin-top:8px; font-size: 14px; opacity: 0.9;">Every rule below exists to protect this one principle.</p>
+        </div>
+
+        <div class="rule-block">
+            <h3>👑 Landlords</h3>
+            <ol>
+                <li>Follow all VerifyStay platform rules at all times.</li>
+                <li>Only list properties you legally own or manage — documents are reviewed manually before any listing goes live.</li>
+                <li>Keep your listing information accurate; report changes (rent, availability) promptly.</li>
+                <li>If you authorize an agent to list on your behalf, you may withdraw that authorization after a minimum of 6 months.</li>
+                <li>All communication and rent agreements must happen through the app — this is what keeps you protected if a dispute arises.</li>
+            </ol>
+        </div>
+
+        <div class="rule-block">
+            <h3>🧑‍💼 Agents</h3>
+            <ol>
+                <li>Follow both the landlord's instructions (for properties you list on their behalf) and VerifyStay platform rules.</li>
+                <li>Never deal with a tenant or landlord outside the app once you've connected through VerifyStay — this is grounds for suspension.</li>
+                <li>Represent properties honestly. A property that doesn't match its listed description can be reported and investigated.</li>
+                <li>If listing for a landlord without their direct account, you must have their name, phone number, and their authorization on file.</li>
+                <li>Repeated rule violations lead to probation, then possible account suspension for a period depending on severity.</li>
+            </ol>
+        </div>
+
+        <div class="rule-block">
+            <h3>🏠 Tenants</h3>
+            <ol>
+                <li>Follow the agent's, landlord's, and VerifyStay's rules when engaging with a property.</li>
+                <li>Report any property that doesn't match its description or address — this protects future tenants too.</li>
+                <li>Report any agent or landlord who asks you to deal outside the app.</li>
+                <li>Be respectful during negotiations and disputes — abusive language can lock your access to a chat thread.</li>
+                <li>Keep proof of all agreements (screenshots, receipts) made through the app.</li>
+            </ol>
+        </div>
+
+        <div class="rule-block">
+            <h3>⚠️ What happens if a rule is broken?</h3>
+            <ul>
+                <li><strong>Dealing outside the app:</strong> First offense = warning + temporary suspension. Repeat offenses = longer suspension, up to permanent removal.</li>
+                <li><strong>False or mismatched listings:</strong> Property is flagged, hidden from search, and investigated before being reinstated or removed.</li>
+                <li><strong>Abusive conduct in disputes:</strong> Chat access may be locked and the case escalated for manual review.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>

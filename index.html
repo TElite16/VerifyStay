@@ -5,17 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VerifyStay — Rent Without Regret</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1a73e8">
+    <meta name="theme-color" content="#0F2C59">
     <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
 </head>
 <body>
     <nav class="navbar">
         <div class="container">
-            <div class="logo">🏠 VerifyStay</div>
+            <div class="logo"><svg width="26" height="26" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><circle cx="100" cy="100" r="96" fill="#0F2C59"/><polygon points="60,96 100,58 140,96" fill="#E8C547"/><rect x="68" y="96" width="64" height="48" rx="3" fill="#F7F8FA"/><rect x="92" y="118" width="16" height="26" rx="2" fill="#0F2C59"/><circle cx="146" cy="138" r="30" fill="#C9A227" stroke="#F7F8FA" stroke-width="5"/><path d="M133,138 L143,148 L161,127" fill="none" stroke="#F7F8FA" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg> VerifyStay</div>
             <div class="nav-links">
                 <a href="#how-it-works">How It Works</a>
                 <a href="#testimonials">Testimonials</a>
+                <a href="rules.html">Rules</a>
                 <a href="login.html" class="btn btn-outline">Login</a>
                 <a href="login.html" class="btn btn-primary">Sign Up Free</a>
             </div>
@@ -24,25 +29,26 @@
 
     <section class="hero">
         <div class="container">
-            <h1>Rent Without Regret</h1>
-            <p>Find verified properties in Lagos, Ibadan, and Abuja. No scams. No surprises.</p>
+            <div class="hero-seal"><span>✓</span></div>
+            <h1>Rent Without <span class="gold-word">Regret</span></h1>
+            <p class="subhead">Verified rental listings across Nigeria — every state, every city. No scams. No surprises.</p>
             <div class="search-box">
-                <input type="text" placeholder="Search for houses in Lagos, Ibadan, Abuja..." id="searchInput">
-                <button class="btn btn-primary" onclick="searchProperties()">🔍 Search</button>
+                <input type="text" placeholder="Search by city, state, or area..." id="searchInput">
+                <button class="btn btn-gold" onclick="searchProperties()">🔍 Search</button>
             </div>
-            <div class="user-types">
+            <div class="tile-carousel">
                 <a href="login.html?role=tenant" class="user-card">
-                    <span>👤</span>
+                    <span class="emoji">👤</span>
                     <h3>I'm a Tenant</h3>
                     <p>Find your next home</p>
                 </a>
                 <a href="login.html?role=landlord" class="user-card">
-                    <span>🏠</span>
+                    <span class="emoji">🏠</span>
                     <h3>I'm a Landlord</h3>
                     <p>List your property</p>
                 </a>
                 <a href="login.html?role=agent" class="user-card">
-                    <span>🤝</span>
+                    <span class="emoji">🤝</span>
                     <h3>I'm an Agent</h3>
                     <p>Manage properties</p>
                 </a>
@@ -88,20 +94,28 @@
     <section class="testimonials" id="testimonials">
         <div class="container">
             <h2>What Our Users Say</h2>
-            <div class="testimonial-grid">
+            <div class="testimonial-carousel">
                 <div class="testimonial-card">
                     <p>"Found my apartment in 2 days. No agent stress!"</p>
                     <h4>— Chidi, Lagos</h4>
-                    <span>★★★★★</span>
+                    <span class="stars">★★★★★</span>
                 </div>
                 <div class="testimonial-card">
                     <p>"My landlord fixed the AC within 3 days. Amazing."</p>
                     <h4>— Amina, Abuja</h4>
-                    <span>★★★★★</span>
+                    <span class="stars">★★★★★</span>
+                </div>
+                <div class="testimonial-card">
+                    <p>"Finally, a way to check listings without traveling to Lagos first."</p>
+                    <h4>— Tunde, Osogbo</h4>
+                    <span class="stars">★★★★★</span>
                 </div>
             </div>
+            <p class="scroll-hint">← swipe to see more →</p>
         </div>
     </section>
+
+    <div class="ad-slot">Ad space reserved — available once VerifyStay qualifies for Google AdSense</div>
 
     <footer>
         <div class="container">
