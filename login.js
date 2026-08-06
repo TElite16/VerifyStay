@@ -32,6 +32,17 @@ if (roleParam && ['tenant', 'landlord', 'agent'].includes(roleParam)) {
     selectedRole = roleParam;
 }
 
+// If arriving via a "Login" link (?mode=login), open straight on the
+// Login form instead of Signup — avoids people having to toggle manually.
+if (urlParams.get('mode') === 'login') {
+    isSignupFlow = false;
+    signupFields.style.display = 'none';
+    confirmPasswordGroup.style.display = 'none';
+    toggleText.textContent = 'New to VerifyStay?';
+    toggleLink.textContent = 'Sign Up';
+    submitBtn.textContent = 'Login';
+}
+
 document.querySelectorAll('.role-selector button').forEach(btn => {
     if (btn.dataset.role === selectedRole) btn.classList.add('active');
     else btn.classList.remove('active');
