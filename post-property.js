@@ -90,12 +90,16 @@ function parseLatLngFromInput(value) {
 function setupMapsLinkPaste() {
     const input = document.getElementById('mapsLinkInput');
     const btn = document.getElementById('useMapsLinkBtn');
+    const status = document.getElementById('mapsLinkStatus');
     if (!input || !btn) return;
 
     function applyFromInput() {
         const result = parseLatLngFromInput(input.value);
         if (!result) {
-            alert('Could not read a location from that. Try pasting just the coordinates (e.g. 6.5244, 3.3792), or a Google Maps link that contains "@lat,lng" — short links like maps.app.goo.gl/... unfortunately don\'t work here since they need Google\'s servers to expand.');
+            if (status) {
+                status.style.color = '#c62828';
+                status.textContent = '❌ Could not read a location from that. Paste just the coordinates (e.g. 6.5244, 3.3792), or a Google Maps link containing "@lat,lng". Short links (maps.app.goo.gl/...) don\'t work here.';
+            }
             return;
         }
         if (marker) map.removeLayer(marker);
@@ -103,6 +107,10 @@ function setupMapsLinkPaste() {
         map.setView([result.lat, result.lng], 16);
         document.getElementById('latitude').value = result.lat;
         document.getElementById('longitude').value = result.lng;
+        if (status) {
+            status.style.color = '#2e7d32';
+            status.textContent = `✅ Pin placed at ${result.lat.toFixed(5)}, ${result.lng.toFixed(5)} — check the map below looks right.`;
+        }
     }
 
     btn.addEventListener('click', applyFromInput);

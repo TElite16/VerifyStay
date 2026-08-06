@@ -158,17 +158,32 @@
             </div>
 
             <div class="form-group">
-                <label>📍 Drop Pin on Map *</label>
-                <label>Property Location *</label>
+                <label>📍 Property Location *</label>
+
+                <div id="mapsHowTo" style="background:#F7F8FA; border:1px solid #e5e5e5; border-radius:8px; padding:14px 16px; margin-bottom:12px;">
+                    <p style="font-weight:600; color:#0F2C59; margin-bottom:8px;">How to get the location from Google Maps:</p>
+                    <ol style="margin:0 0 0 18px; padding:0; font-size:14px; line-height:1.6; color:#333;">
+                        <li>Open the <strong>Google Maps app</strong> (or maps.google.com) on your phone</li>
+                        <li>Find the property's location, then <strong>press and hold (long-press)</strong> the exact spot until a red pin drops</li>
+                        <li>A card pops up at the bottom showing coordinates, e.g. <code>6.5244, 3.3792</code> — <strong>tap the coordinates</strong> to copy them</li>
+                        <li>Come back here and <strong>paste them</strong> into the box below, then tap <strong>"Use this"</strong></li>
+                    </ol>
+                    <p style="font-size:13px; color:#666; margin-top:10px; margin-bottom:0;">
+                        Alternative: if you tap <strong>Share</strong> on the pin instead and copy the link, that also works here as long as it contains "@" followed by two numbers (e.g. "@6.5244,3.3792") — short links like <code>maps.app.goo.gl/...</code> won't work since those need Google's own servers to open.
+                    </p>
+                    <p style="font-size:13px; color:#666; margin-top:6px; margin-bottom:0;">
+                        Don't have Google Maps or find this confusing? No wahala — just scroll down and tap directly on the map below to drop a pin instead.
+                    </p>
+                </div>
+
                 <div style="display:flex; gap:8px; margin-bottom:10px;">
-                    <input type="text" id="mapsLinkInput" placeholder="Paste a Google Maps link, or coordinates like 6.5244, 3.3792">
+                    <input type="text" id="mapsLinkInput" placeholder="Paste coordinates or Google Maps link here">
                     <button type="button" class="btn btn-outline" id="useMapsLinkBtn" style="white-space:nowrap;">Use this</button>
                 </div>
-                <div class="help-text" style="margin-bottom:10px;">
-                    Easiest way: open the location in Google Maps, long-press the exact spot until a red pin drops, then tap the coordinates shown at the bottom to copy them — paste here. A shared Maps link also works if it contains "@lat,lng" in it.
-                </div>
+                <div id="mapsLinkStatus" style="font-size:13px; margin-bottom:10px;"></div>
+
                 <div id="map"></div>
-                <div class="help-text">Click on the map to pin your property's exact location</div>
+                <div class="help-text">Or tap directly on the map to pin your property's exact location</div>
                 <input type="hidden" id="latitude">
                 <input type="hidden" id="longitude">
             </div>
