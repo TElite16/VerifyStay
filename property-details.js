@@ -10,11 +10,13 @@ let propertyData = null;
 let selectedStars = 0;
 
 auth.onAuthStateChanged(async (user) => {
-    currentUser = user;
-    if (user) {
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        if (userDoc.exists) currentUserRole = userDoc.data().role;
+    if (!user) {
+        window.location.href = 'login.html';
+        return;
     }
+    currentUser = user;
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    if (userDoc.exists) currentUserRole = userDoc.data().role;
     loadProperty();
 });
 
@@ -52,7 +54,8 @@ function renderProperty() {
     card.innerHTML = `
         <h1>${escapeHtml(p.title || 'Property')}</h1>
         <p class="price">₦${(p.price || 0).toLocaleString()}/year</p>
-        <p class="location">📍 ${escapeHtml(p.city || '')}${p.address ? `, ${escapeHtml(p.address)}` : ''}</p>
+        <p class="location">📍 ${p.area ? escapeHtml(p.area) + ', ' : ''}${escapeHtml(p.city || '')}</p>
+        <p style="color:#667;font-size:14px;margin-bottom:8px;">${escapeHtml(p.address || '')}</p>
         ${p.verified ? `<span class="badge badge-verified">✅ Verified</span>` : `<span class="badge badge-pending">Pending review</span>`}
         <div class="photo-row">${photos || '<p style="color:#999;">No photos uploaded yet.</p>'}</div>
         <p>${escapeHtml(p.description || '')}</p>
@@ -61,6 +64,7 @@ function renderProperty() {
         <div id="detailMap"></div>
         <div class="action-row">
             <a class="btn btn-outline" id="directionsBtn" target="_blank" rel="noopener">📍 Get Directions</a>
+            <a class="btn btn-outline" id="googleMapsBtn" target="_blank" rel="noopener">🗺️ View on Google Maps</a>
             ${applyButton}
         </div>
         <p><span class="flag-link" onclick="reportProperty()">🚩 Report this listing</span></p>
@@ -81,6 +85,8 @@ function renderProperty() {
 
         document.getElementById('directionsBtn').href =
             `https://www.openstreetmap.org/directions?to=${p.latitude}%2C${p.longitude}`;
+        document.getElementById('googleMapsBtn').href =
+            `https://www.google.com/maps/search/?api=1&query=${p.latitude}%2C${p.longitude}`;
     }
 
     if (currentUserRole === 'tenant') attachStarInput();
@@ -194,18 +200,42 @@ async function reportProperty() {
         window.location.href = 'login.html';
         return;
     }
-    const reason = prompt('What is wrong with this listing? (e.g. address does not match, fake photos, unreachable owner)');
+
+    const choice = prompt(
+        'What kind of issue is this? Type the number:\n' +
+        '1 = Listing does not match the address/description\n' +
+        '2 = Agent/Landlord asked to deal outside the app\n' +
+        '3 = Fake photos or documents\n' +
+        '4 = Unreachable owner/agent\n' +
+        '5 = Other'
+    );
+    if (!choice) return;
+
+    const typeMap = {
+        '1': 'listing-mismatch',
+        '2': 'off-platform-dealing',
+        '3': 'fake-documents',
+        '4': 'unreachable',
+        '5': 'other'
+    };
+    const violationType = typeMap[choice.trim()] || 'other';
+
+    const reason = prompt('Add a few details about what happened:');
     if (!reason) return;
 
     try {
         await db.collection('flags').add({
             targetType: 'property',
             targetId: propertyId,
+            violationType: violationType,   // used by admin to prioritize + track repeat offenders
             raisedBy: currentUser.uid,
             reason: reason,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        alert('Thanks — this listing has been flagged for review.');
+        alert('Thanks — this listing has been flagged for review.' +
+              (violationType === 'off-platform-dealing'
+                ? ' Reports of dealing outside the app are treated seriously and can lead to account suspension.'
+                : ''));
     } catch (error) {
         console.error('Error flagging property:', error);
         alert('Could not submit report: ' + error.message);

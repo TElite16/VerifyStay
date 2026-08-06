@@ -159,6 +159,14 @@
 
             <div class="form-group">
                 <label>📍 Drop Pin on Map *</label>
+                <label>Property Location *</label>
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                    <input type="text" id="mapsLinkInput" placeholder="Paste a Google Maps link, or coordinates like 6.5244, 3.3792">
+                    <button type="button" class="btn btn-outline" id="useMapsLinkBtn" style="white-space:nowrap;">Use this</button>
+                </div>
+                <div class="help-text" style="margin-bottom:10px;">
+                    Easiest way: open the location in Google Maps, long-press the exact spot until a red pin drops, then tap the coordinates shown at the bottom to copy them — paste here. A shared Maps link also works if it contains "@lat,lng" in it.
+                </div>
                 <div id="map"></div>
                 <div class="help-text">Click on the map to pin your property's exact location</div>
                 <input type="hidden" id="latitude">
