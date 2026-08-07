@@ -16,70 +16,6 @@ function starString(rating) {
     return '★'.repeat(r) + '☆'.repeat(5 - r);
 }
 
-async function loadFeaturedProperties() {
-    const grid = document.getElementById('propertyGrid');
-    if (!grid) return;
-
-    try {
-        const snapshot = await db.collection('properties')
-            .where('status', '==', 'active')
-            .limit(6)
-            .get();
-
-        grid.innerHTML = '';
-
-        if (snapshot.empty) {
-            grid.innerHTML = `
-                <div style="grid-column:1/-1;text-align:center;padding:40px;color:#999;">
-                    <p style="font-size:40px;">🏠</p>
-                    <p>No verified properties yet. Be the first to list!</p>
-                </div>
-            `;
-            return;
-        }
-
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const rating = data.rating || 0;
-            const coverUrl = (data.photoUrls && data.photoUrls.length) ? data.photoUrls[data.coverIndex || 0] : null;
-            const thumb = coverUrl
-                ? `<div class="thumb" style="background-image:url('${coverUrl}');background-size:cover;background-position:center;"></div>`
-                : `<div class="thumb">🏠</div>`;
-
-            grid.innerHTML += `
-                <a href="property-details.html?id=${doc.id}" class="property-card">
-                    ${thumb}
-                    <div class="info">
-                        <h3>${escapeHtml(data.title || 'Property')}</h3>
-                        <p class="location">📍 ${data.area ? escapeHtml(data.area) + ', ' : ''}${escapeHtml(data.city || '')}</p>
-                        <p class="price">₦${(data.price || 0).toLocaleString()}/year</p>
-                        <p class="rating">${starString(rating)} ${rating.toFixed(1)}</p>
-                        ${data.verified ? `<span class="badge badge-verified">✅ Verified</span>` : `<span class="badge badge-pending">Pending review</span>`}
-                    </div>
-                </a>
-            `;
-        });
-    } catch (error) {
-        console.error('Error loading properties:', error);
-        grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#c62828;">Error loading properties. Please refresh.</p>';
-    }
-}
-
-// Only signed-in users can browse listings — logged-out visitors on the
-// homepage see a locked prompt instead of real property data.
-function showLockedProperties() {
-    const grid = document.getElementById('propertyGrid');
-    if (!grid) return;
-    grid.innerHTML = `
-        <div style="grid-column:1/-1;text-align:center;padding:40px;">
-            <p style="font-size:40px;">🔒</p>
-            <p style="margin-bottom:16px;color:#555;">Sign in to see verified listings across Nigeria.</p>
-            <a href="login.html?mode=login" class="btn btn-outline" style="margin-right:10px;">Login</a>
-            <a href="login.html" class="btn btn-primary">Sign Up Free</a>
-        </div>
-    `;
-}
-
 // Points every "VerifyStay" logo link at the right place depending on
 // whether the visitor is signed in: Browse Properties if logged in,
 // the public homepage if not — works the same on every page since app.js
@@ -90,7 +26,115 @@ function syncLogoLink(user) {
     });
 }
 
-// Basic escaping so user-entered text can never break the page or inject HTML
+// Adds a "← Back" button at the top-left of the navbar on every page except
+// the homepage, so people don't feel stuck after tapping into Rules, a
+// property, dashboard sections, etc. Falls back to a sensible page (not
+// just closing the tab) when there's no real history to go back to —
+// e.g. someone opened the page fresh from a bookmark or shared link.
+function injectBackButton(fallbackHref) {
+    const isHome = /(^|\/)index\.html$/.test(window.location.pathname) || window.location.pathname.endsWith('/');
+    if (isHome) return;
+    if (document.getElementById('navBackBtn')) return; // don't double-inject
+
+    const container = document.querySelector('.navbar .container');
+    if (!container) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'navBackBtn';
+    btn.setAttribute('aria-label', 'Go back');
+    btn.textContent = '←';
+    btn.style.cssText = 'background:none;border:none;font-size:22px;color:#0F2C59;cursor:pointer;padding:4px 10px 4px 0;margin-right:4px;line-height:1;';
+    btn.addEventListener('click', () => {
+        if (window.history.length > 1 && document.referrer.includes(window.location.host)) {
+            window.history.back();
+        } else {
+            window.location.href = fallbackHref;
+        }
+    });
+    container.insertBefore(btn, container.firstChild);
+}
+
+// Builds and injects the slide-out side navigation drawer (hamburger menu)
+// on every page once we know who's logged in. Gives quick access to
+// Dashboard, Profile, listings, Rules, and more from anywhere in the app.
+async function injectSideDrawer(user) {
+    if (!user) return;
+    if (document.getElementById('sideDrawer')) return; // don't double-inject
+
+    const navLinks = document.querySelector('.navbar .nav-links');
+    if (!navLinks) return;
+
+    let name = 'My Account';
+    let role = '';
+    let photoUrl = null;
+    try {
+        const doc = await db.collection('users').doc(user.uid).get();
+        if (doc.exists) {
+            const d = doc.data();
+            name = d.name || name;
+            role = d.role || '';
+            photoUrl = d.profilePictureUrl || null;
+        }
+    } catch (e) { console.warn('Could not load user info for drawer:', e); }
+
+    const myListingsLabel = role === 'tenant' ? 'My Applications' : 'My Properties';
+
+    // Hamburger toggle button, added at the end of the existing nav links
+    const toggleBtn = document.createElement('button');
+    toggleBtn.id = 'sideDrawerBtn';
+    toggleBtn.setAttribute('aria-label', 'Open menu');
+    toggleBtn.textContent = '☰';
+    navLinks.appendChild(toggleBtn);
+
+    // Overlay + drawer panel
+    const overlay = document.createElement('div');
+    overlay.id = 'sideDrawerOverlay';
+
+    const drawer = document.createElement('div');
+    drawer.id = 'sideDrawer';
+    drawer.innerHTML = `
+        <div class="drawer-header">
+            ${photoUrl
+                ? `<img src="${photoUrl}" alt="">`
+                : `<div class="avatar-fallback">👤</div>`}
+            <div>
+                <div class="name">${escapeHtml(name)}</div>
+                <div class="role">${escapeHtml(role)}</div>
+            </div>
+            <button id="sideDrawerCloseBtn" aria-label="Close menu">✕</button>
+        </div>
+
+        <div class="drawer-section-label">Menu</div>
+        <a class="drawer-link" href="dashboard.html">📊 Dashboard</a>
+        <a class="drawer-link" href="dashboard.html#properties">📋 ${myListingsLabel}</a>
+        <a class="drawer-link" href="feed.html">🔍 Browse Properties</a>
+        <a class="drawer-link" href="profile.html">👤 My Profile</a>
+
+        <div class="drawer-section-label">Help &amp; Support</div>
+        <a class="drawer-link" href="rules.html">📜 Platform Rules</a>
+        <a class="drawer-link" href="#">🔔 Notifications <span class="soon">Soon</span></a>
+        <a class="drawer-link" href="#">💬 Support <span class="soon">Soon</span></a>
+
+        <div style="margin-top:auto;"></div>
+        <a class="drawer-link logout" href="#" id="drawerLogoutLink">🚪 Logout</a>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(drawer);
+
+    function openDrawer() { drawer.classList.add('open'); overlay.classList.add('open'); }
+    function closeDrawer() { drawer.classList.remove('open'); overlay.classList.remove('open'); }
+
+    toggleBtn.addEventListener('click', openDrawer);
+    overlay.addEventListener('click', closeDrawer);
+    document.getElementById('sideDrawerCloseBtn').addEventListener('click', closeDrawer);
+    document.getElementById('drawerLogoutLink').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+    });
+}
+
+
 function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str;
@@ -98,6 +142,108 @@ function escapeHtml(str) {
 }
 window.escapeHtml = escapeHtml;
 window.starString = starString;
+
+// Shared Cloudinary upload helper — used by post-property.js, login.js
+// (profile picture on signup), and profile.js (updating profile picture).
+async function uploadFile(file, folder) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', window.CLOUDINARY_UPLOAD_PRESET);
+    formData.append('folder', folder);
+
+    const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${window.CLOUDINARY_CLOUD_NAME}/auto/upload`,
+        { method: 'POST', body: formData }
+    );
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error('Upload failed: ' + errText);
+    }
+
+    const data = await response.json();
+    return data.secure_url;
+}
+window.uploadFile = uploadFile;
+
+// ---------------------------------------------------------------
+// BLACK FLAGS / BANS
+// strikeCount = "black flags" (admin-issued, private, only the account
+// owner sees their own count). Every 3 black flags triggers a ban:
+// 2 weeks the first time, 4 weeks the second, 6 the third, etc.
+// There's no paid backend to run this on a schedule, so instead this
+// check runs from ANY browser that touches that account — the owner's
+// own dashboard loading, or someone else viewing their public profile.
+// The Firestore rule only accepts the exact correct math, so this can't
+// be gamed into a fake/short ban or skipped by editing the request.
+// ---------------------------------------------------------------
+async function checkAndApplyBan(uid) {
+    try {
+        const ref = db.collection('users').doc(uid);
+        const doc = await ref.get();
+        if (!doc.exists) return;
+        const d = doc.data();
+        const strikeCount = d.strikeCount || 0;
+        const banCount = d.banCount || 0;
+        const now = new Date();
+        const suspendedUntil = d.suspendedUntil ? d.suspendedUntil.toDate() : null;
+        const currentlySuspended = suspendedUntil && suspendedUntil > now;
+        const nextBanThreshold = 3 * (banCount + 1);
+
+        if (!currentlySuspended && strikeCount >= nextBanThreshold) {
+            const newBanCount = banCount + 1;
+            const newSuspendedUntil = new Date(now.getTime() + newBanCount * 14 * 24 * 60 * 60 * 1000);
+            await ref.update({
+                banCount: newBanCount,
+                suspendedUntil: firebase.firestore.Timestamp.fromDate(newSuspendedUntil)
+            });
+        }
+    } catch (e) {
+        // Expected to fail silently for anyone not yet due a ban — the
+        // security rule rejects the write, which is normal, not an error.
+    }
+}
+window.checkAndApplyBan = checkAndApplyBan;
+
+// Counts PUBLIC "red flags" (user-submitted reports) against a person.
+// Never exposes who filed them or what they said — just the count and
+// a rough breakdown by category, so a profile visitor gets a signal
+// without exposing any reporter's identity.
+async function getRedFlagSummary(uid) {
+    try {
+        const snapshot = await db.collection('flags')
+            .where('targetType', '==', 'user')
+            .where('targetId', '==', uid)
+            .get();
+        const byType = {};
+        snapshot.forEach(doc => {
+            const t = doc.data().violationType || 'other';
+            byType[t] = (byType[t] || 0) + 1;
+        });
+        return { count: snapshot.size, byType: byType };
+    } catch (e) {
+        console.warn('Could not load red flag summary:', e);
+        return { count: 0, byType: {} };
+    }
+}
+window.getRedFlagSummary = getRedFlagSummary;
+
+// Returns the badge HTML for a property listing under the new instant-
+// publish model: shows "Not yet verified" for exactly 4 hours after
+// verificationWindowStart, then nothing (not a red flag, just quietly
+// stops showing — the property is simply live). Falls back to createdAt
+// for any listing posted before this field existed.
+function getListingBadge(data) {
+    const startField = data.verificationWindowStart || data.createdAt;
+    if (!startField || !startField.toDate) return '';
+    const start = startField.toDate();
+    const hoursSince = (Date.now() - start.getTime()) / (1000 * 60 * 60);
+    if (hoursSince < 4) {
+        return `<span class="badge badge-pending">🕓 Not yet verified</span>`;
+    }
+    return '';
+}
+window.getListingBadge = getListingBadge;
 
 function logout() {
     auth.signOut().then(() => {
@@ -113,15 +259,40 @@ window.logout = logout;
 // This runs on EVERY page (app.js is loaded everywhere) so the logo always
 // points to the right place. On index.html specifically, it also decides
 // whether to show real listings or the locked/sign-in prompt.
-auth.onAuthStateChanged((user) => {
+auth.onAuthStateChanged(async (user) => {
     syncLogoLink(user);
+    injectBackButton(user ? 'dashboard.html' : 'index.html');
+    injectSideDrawer(user);
 
-    const grid = document.getElementById('propertyGrid');
-    if (grid) {
-        if (user) {
-            loadFeaturedProperties();
-        } else {
-            showLockedProperties();
-        }
+    const browseCta = document.getElementById('browseCta');
+    if (browseCta) {
+        browseCta.href = user ? 'feed.html' : 'login.html?mode=login';
+    }
+
+    if (user) {
+        await checkAndApplyBan(user.uid);
+        await renderSuspensionBanner(user.uid);
     }
 });
+
+// Shows a fixed banner across the top of the page if the logged-in
+// user is currently suspended, so they always know their status —
+// doesn't log them out, just makes the ban visible everywhere.
+async function renderSuspensionBanner(uid) {
+    if (document.getElementById('suspensionBanner')) return;
+    try {
+        const doc = await db.collection('users').doc(uid).get();
+        if (!doc.exists) return;
+        const d = doc.data();
+        const suspendedUntil = d.suspendedUntil ? d.suspendedUntil.toDate() : null;
+        if (!suspendedUntil || suspendedUntil <= new Date()) return;
+
+        const banner = document.createElement('div');
+        banner.id = 'suspensionBanner';
+        banner.style.cssText = 'position:sticky;top:0;z-index:997;background:#c62828;color:#fff;text-align:center;padding:10px 14px;font-size:14px;';
+        banner.textContent = `⚠️ Your account is suspended until ${suspendedUntil.toLocaleDateString()} due to admin flags on your account.`;
+        document.body.insertBefore(banner, document.body.firstChild);
+    } catch (e) {
+        console.warn('Could not check suspension status:', e);
+    }
+}

@@ -54,6 +54,7 @@
 </head>
 <body>
     <div class="auth-container">
+        <a href="index.html" style="display:inline-block; color:#0F2C59; text-decoration:none; font-size:15px; margin-bottom:10px;">← Back to homepage</a>
         <h2 style="display:flex; align-items:center; justify-content:center; gap:8px;"><svg width="30" height="30" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><circle cx="100" cy="100" r="96" fill="#0F2C59"/><polygon points="60,96 100,58 140,96" fill="#E8C547"/><rect x="68" y="96" width="64" height="48" rx="3" fill="#F7F8FA"/><rect x="92" y="118" width="16" height="26" rx="2" fill="#0F2C59"/><circle cx="146" cy="138" r="30" fill="#C9A227" stroke="#F7F8FA" stroke-width="5"/><path d="M133,138 L143,148 L161,127" fill="none" stroke="#F7F8FA" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg> VerifyStay</h2>
         <p class="subtitle">Rent Without Regret</p>
 
@@ -68,9 +69,26 @@
 
         <form id="authForm">
             <div id="signupFields">
+                <div class="form-group" style="text-align:center;">
+                    <label>Profile Picture</label>
+                    <div id="pfpPreviewWrap" style="width:84px;height:84px;border-radius:50%;background:#F7F8FA;border:2px dashed #C9A227;margin:6px auto;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                        <span id="pfpPlaceholder" style="font-size:28px;color:#999;">👤</span>
+                        <img id="pfpPreviewImg" style="display:none;width:100%;height:100%;object-fit:cover;">
+                    </div>
+                    <input type="file" id="profilePicture" accept="image/*" style="max-width:220px;margin:0 auto;display:block;">
+                    <small style="color:#666;display:block;margin-top:4px;">Optional — you can add this later from your Profile page too.</small>
+                </div>
                 <div class="form-group">
                     <label>Full Name *</label>
                     <input type="text" id="fullName" placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select id="gender">
+                        <option value="">Prefer not to say</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Phone Number *</label>
@@ -116,6 +134,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
+    <script src="cloudinary-config.js"></script>
+    <script src="app.js"></script>
     <script src="login.js"></script>
     <script src="pwa-register.js"></script>
 </body>

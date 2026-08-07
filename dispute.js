@@ -26,13 +26,23 @@ function populateAgainstOptions() {
     const select = document.getElementById('disputeAgainst');
     select.innerHTML = '<option value="">Select...</option>';
 
-    // Only the allowed pairings: Landlord<->Agent, Tenant<->Agent.
-    // No direct Landlord<->Tenant disputes.
+    // Agent-mediated pairings are always available. In addition, since
+    // landlords can now list properties directly (no agent involved),
+    // direct Landlord<->Tenant disputes are also allowed — otherwise a
+    // tenant renting a self-listed property would have nowhere to escalate
+    // a problem. Direct pairings are flagged (directPairing) so you can
+    // still spot anyone misusing this to dodge the "deal in the app" rule.
     let options = [];
     if (currentRole === 'tenant') {
-        options = [{ value: 'agent', label: 'The Agent managing this property' }];
+        options = [
+            { value: 'agent', label: 'The Agent managing this property' },
+            { value: 'landlord', label: 'The Landlord (property listed directly, no agent)' }
+        ];
     } else if (currentRole === 'landlord') {
-        options = [{ value: 'agent', label: 'The Agent managing my property' }];
+        options = [
+            { value: 'agent', label: 'An Agent I engaged separately' },
+            { value: 'tenant', label: 'A Tenant renting my property (no agent involved)' }
+        ];
     } else if (currentRole === 'agent') {
         options = [
             { value: 'landlord', label: 'A Landlord I work with' },
@@ -62,12 +72,17 @@ document.getElementById('disputeForm').addEventListener('submit', async function
     }
 
     try {
+        const directPairing =
+            (currentRole === 'tenant' && against === 'landlord') ||
+            (currentRole === 'landlord' && against === 'tenant');
+
         await db.collection('disputes').add({
             raisedBy: currentUser.uid,
             raisedByRole: currentRole,
             againstRole: against,
             propertyId: propertyId || null,
             description: description,
+            directPairing: directPairing,   // true = no agent involved; worth a closer look on review
             status: 'open',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });

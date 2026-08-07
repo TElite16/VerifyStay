@@ -10,6 +10,12 @@ let selectedDoc = null;
 let currentUid = null;
 let currentRole = 'landlord';
 
+// Edit-mode state — set when arriving via post-property.html?edit=<propertyId>
+let editPropertyId = null;
+let existingPhotoUrls = [];
+let existingCoverIndex = 0;
+let existingDocUrl = null;
+
 auth.onAuthStateChanged(async (user) => {
     if (!user) {
         window.location.href = 'login.html';
@@ -40,7 +46,100 @@ auth.onAuthStateChanged(async (user) => {
     initMap();
     setupFileUploads();
     setupFormSubmit(user.uid);
+
+    // Edit mode: post-property.html?edit=<propertyId>
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get('edit');
+    if (editId) {
+        editPropertyId = editId;
+        await loadPropertyForEdit(editId, user.uid);
+    }
 });
+
+// Loads an existing property into the form for editing. Only the owner can
+// edit their own listing — everyone else gets bounced back to the dashboard.
+async function loadPropertyForEdit(propertyId, userId) {
+    try {
+        const doc = await db.collection('properties').doc(propertyId).get();
+        if (!doc.exists) {
+            alert('That listing could not be found.');
+            window.location.href = 'dashboard.html';
+            return;
+        }
+        const p = doc.data();
+        if (p.ownerId !== userId) {
+            alert('You can only edit your own listings.');
+            window.location.href = 'dashboard.html';
+            return;
+        }
+
+        document.getElementById('title').value = p.title || '';
+        document.getElementById('propertyType').value = p.propertyType || '';
+        document.getElementById('city').value = p.city || '';
+        document.getElementById('area').value = p.area || '';
+        document.getElementById('address').value = p.address || '';
+        document.getElementById('price').value = p.price || '';
+        document.getElementById('bedrooms').value = p.bedrooms || '';
+        document.getElementById('description').value = p.description || '';
+
+        if (currentRole === 'agent') {
+            document.getElementById('landlordName').value = p.landlordName || '';
+            document.getElementById('landlordPhone').value = p.landlordPhone || '';
+        }
+
+        if (p.latitude && p.longitude) {
+            document.getElementById('latitude').value = p.latitude;
+            document.getElementById('longitude').value = p.longitude;
+            marker = L.marker([p.latitude, p.longitude]).addTo(map);
+            map.setView([p.latitude, p.longitude], 15);
+        }
+
+        existingPhotoUrls = p.photoUrls || [];
+        existingCoverIndex = p.coverIndex || 0;
+        existingDocUrl = p.documentUrl || null;
+        renderExistingPhotoPreviews();
+
+        // Update page chrome to make it obvious this is an edit, not a new listing
+        const heading = document.querySelector('h2');
+        if (heading) heading.textContent = '✏️ Edit Your Property';
+        const subhead = document.querySelector('.subtitle, p.subtitle');
+        if (subhead) subhead.textContent = 'Changes go live immediately — the 4-hour "Not yet verified" badge will show again.';
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) submitBtn.textContent = 'Save Changes';
+    } catch (error) {
+        console.error('Error loading property for edit:', error);
+        alert('Could not load that listing for editing: ' + error.message);
+        window.location.href = 'dashboard.html';
+    }
+}
+
+// Shows the property's current photos when editing, with a note that
+// uploading new ones will replace them entirely.
+function renderExistingPhotoPreviews() {
+    if (existingPhotoUrls.length === 0) return;
+    const preview = document.getElementById('filePreview');
+    preview.innerHTML = '';
+
+    const note = document.createElement('p');
+    note.style.cssText = 'font-size:13px;color:#666;margin-bottom:8px;width:100%;';
+    note.textContent = 'Current photos shown below. Choose new photos above only if you want to replace all of them.';
+    preview.appendChild(note);
+
+    existingPhotoUrls.forEach((url, index) => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:relative;display:inline-block;margin:4px;';
+        const img = document.createElement('img');
+        img.src = url;
+        img.className = 'preview-image';
+        if (index === existingCoverIndex) img.style.border = '3px solid #C9A227';
+        const label = document.createElement('div');
+        label.style.cssText = 'font-size:11px;text-align:center;padding:2px;color:#666;';
+        label.textContent = index === existingCoverIndex ? '⭐ Current cover' : 'Existing photo';
+        wrap.appendChild(img);
+        wrap.appendChild(label);
+        preview.appendChild(wrap);
+    });
+}
 
 function initMap() {
     const defaultPos = [9.0820, 8.6753]; // Nigeria center
@@ -192,25 +291,7 @@ function setupFileUploads() {
 
 // Uploads one file to Cloudinary (free, no card) using an unsigned upload
 // preset, and returns its public URL. See cloudinary-config.js for setup.
-async function uploadFile(file, folder) {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', window.CLOUDINARY_UPLOAD_PRESET);
-    formData.append('folder', folder);
-
-    const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${window.CLOUDINARY_CLOUD_NAME}/auto/upload`,
-        { method: 'POST', body: formData }
-    );
-
-    if (!response.ok) {
-        const errText = await response.text();
-        throw new Error('Upload failed: ' + errText);
-    }
-
-    const data = await response.json();
-    return data.secure_url;
-}
+// uploadFile() now lives in app.js (shared with login.js/profile.js)
 
 function setupFormSubmit(userId) {
     const form = document.getElementById('propertyForm');
@@ -235,11 +316,11 @@ function setupFormSubmit(userId) {
             showError('Please fill in all required fields and drop a pin on the map.');
             return;
         }
-        if (!selectedDoc) {
+        if (!selectedDoc && !(editPropertyId && existingDocUrl)) {
             showError('Please upload a verification document.');
             return;
         }
-        if (selectedFiles.length === 0) {
+        if (selectedFiles.length === 0 && !(editPropertyId && existingPhotoUrls.length > 0)) {
             showError('Please upload at least one property photo — listings without a photo don\'t show a thumbnail to tenants.');
             return;
         }
@@ -248,22 +329,30 @@ function setupFormSubmit(userId) {
         submitBtn.textContent = 'Uploading...';
 
         try {
-            // 1. Upload document
-            progressDiv.textContent = 'Uploading document...';
-            const docUrl = await uploadFile(
-                selectedDoc,
-                `verification-docs/${userId}`
-            );
-
-            // 2. Upload photos (if any)
-            const photoUrls = [];
-            for (let i = 0; i < selectedFiles.length; i++) {
-                progressDiv.textContent = `Uploading photo ${i + 1} of ${selectedFiles.length}...`;
-                const url = await uploadFile(
-                    selectedFiles[i],
-                    `properties/${userId}`
+            // 1. Upload document (only if a new one was chosen; otherwise keep the existing one)
+            let docUrl = existingDocUrl;
+            if (selectedDoc) {
+                progressDiv.textContent = 'Uploading document...';
+                docUrl = await uploadFile(
+                    selectedDoc,
+                    `verification-docs/${userId}`
                 );
-                photoUrls.push(url);
+            }
+
+            // 2. Upload photos (only if new ones were chosen; otherwise keep existing)
+            let photoUrls = existingPhotoUrls;
+            let finalCoverIndex = editPropertyId ? existingCoverIndex : coverPhotoIndex;
+            if (selectedFiles.length > 0) {
+                photoUrls = [];
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    progressDiv.textContent = `Uploading photo ${i + 1} of ${selectedFiles.length}...`;
+                    const url = await uploadFile(
+                        selectedFiles[i],
+                        `properties/${userId}`
+                    );
+                    photoUrls.push(url);
+                }
+                finalCoverIndex = coverPhotoIndex;
             }
 
             progressDiv.textContent = 'Saving listing...';
@@ -275,45 +364,85 @@ function setupFormSubmit(userId) {
                 ownerRole = userDoc.data().role || 'landlord';
             }
 
-            // 4. Save property doc — ownerId MUST equal auth uid to satisfy Firestore rules
-            const propertyData = {
-                title: title,
-                propertyType: propertyType,
-                city: city,
-                area: area,
-                address: address,
-                price: parseFloat(price),
-                bedrooms: parseInt(document.getElementById('bedrooms').value) || 0,
-                description: document.getElementById('description').value.trim(),
-                latitude: parseFloat(lat),
-                longitude: parseFloat(lng),
-                documentUrl: docUrl,
-                photoUrls: photoUrls,
-                coverIndex: coverPhotoIndex,
-                ownerId: userId,
-                ownerRole: ownerRole,
-                status: 'pending',   // only an admin flips this to 'active'
-                verified: false,     // only an admin flips this after document review
-                rating: 0,
-                reviewCount: 0,
-                flags: 0,
-                // Landlord-authorization fields (only meaningful when ownerRole === 'agent').
-                // Landlord can later "claim" this property by verifying the same phone
-                // number on VerifyStay — an admin links the two accounts manually for now.
-                landlordName: ownerRole === 'agent' ? (document.getElementById('landlordName').value.trim() || null) : null,
-                landlordPhone: ownerRole === 'agent' ? (document.getElementById('landlordPhone').value.trim() || null) : null,
-                authorizedByLandlord: false,   // admin flips true once landlord confirms authorization
-                authorizationDate: null,       // admin sets when authorization is confirmed
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
-            const docRef = await db.collection('properties').add(propertyData);
-            console.log('Property saved:', docRef.id);
+            // 4. Save property doc.
+            // NEW listing: full document, ownerId MUST equal auth uid (Firestore rules require this).
+            // EDIT: only update editable fields — never touch rating/flags/ownerId/createdAt,
+            // and reset status/verified so an edited listing gets re-reviewed before going live.
+            let docRef;
+            if (editPropertyId) {
+                const updateData = {
+                    title: title,
+                    propertyType: propertyType,
+                    city: city,
+                    area: area,
+                    address: address,
+                    price: parseFloat(price),
+                    bedrooms: parseInt(document.getElementById('bedrooms').value) || 0,
+                    description: document.getElementById('description').value.trim(),
+                    latitude: parseFloat(lat),
+                    longitude: parseFloat(lng),
+                    documentUrl: docUrl,
+                    photoUrls: photoUrls,
+                    coverIndex: finalCoverIndex,
+                    status: 'active',
+                    verified: false,
+                    verificationWindowStart: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                if (currentRole === 'agent') {
+                    updateData.landlordName = document.getElementById('landlordName').value.trim() || null;
+                    updateData.landlordPhone = document.getElementById('landlordPhone').value.trim() || null;
+                }
+                await db.collection('properties').doc(editPropertyId).update(updateData);
+                docRef = { id: editPropertyId };
+                console.log('Property updated:', editPropertyId);
+            } else {
+                const propertyData = {
+                    title: title,
+                    propertyType: propertyType,
+                    city: city,
+                    area: area,
+                    address: address,
+                    price: parseFloat(price),
+                    bedrooms: parseInt(document.getElementById('bedrooms').value) || 0,
+                    description: document.getElementById('description').value.trim(),
+                    latitude: parseFloat(lat),
+                    longitude: parseFloat(lng),
+                    documentUrl: docUrl,
+                    photoUrls: photoUrls,
+                    coverIndex: finalCoverIndex,
+                    ownerId: userId,
+                    ownerRole: ownerRole,
+                    status: 'active',   // goes live immediately — no more admin approval gate
+                    verified: false,     // optional extra badge an admin can still grant after reviewing the utility bill
+                    verificationWindowStart: firebase.firestore.FieldValue.serverTimestamp(), // drives the 4-hour "Not yet verified" badge
+                    rating: 0,
+                    reviewCount: 0,
+                    flags: 0,
+                    // Landlord-authorization fields (only meaningful when ownerRole === 'agent').
+                    // Landlord can later "claim" this property by verifying the same phone
+                    // number on VerifyStay — an admin links the two accounts manually for now.
+                    landlordName: ownerRole === 'agent' ? (document.getElementById('landlordName').value.trim() || null) : null,
+                    landlordPhone: ownerRole === 'agent' ? (document.getElementById('landlordPhone').value.trim() || null) : null,
+                    authorizedByLandlord: false,   // admin flips true once landlord confirms authorization
+                    authorizationDate: null,       // admin sets when authorization is confirmed
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                docRef = await db.collection('properties').add(propertyData);
+                console.log('Property saved:', docRef.id);
+            }
 
             progressDiv.textContent = '';
             document.getElementById('successMessage').style.display = 'block';
-            document.getElementById('successMessage').textContent =
-                `✅ "${title}" listed successfully! Awaiting verification.`;
+            document.getElementById('successMessage').textContent = editPropertyId
+                ? `✅ Changes saved and live immediately! It'll show "Not yet verified" for 4 hours while we check the details.`
+                : `✅ "${title}" is live now! It'll show "Not yet verified" for 4 hours while we check the details.`;
+
+            if (editPropertyId) {
+                document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth' });
+                setTimeout(() => { window.location.href = 'dashboard.html'; }, 1800);
+                return;
+            }
 
             form.reset();
             document.getElementById('latitude').value = '';

@@ -24,6 +24,23 @@ const phoneInput = document.getElementById('phone');
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const confirmPasswordInput = document.getElementById('confirmPassword');
+const genderInput = document.getElementById('gender');
+const profilePictureInput = document.getElementById('profilePicture');
+
+// ---------------- Live profile picture preview ----------------
+if (profilePictureInput) {
+    profilePictureInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            document.getElementById('pfpPreviewImg').src = e.target.result;
+            document.getElementById('pfpPreviewImg').style.display = 'block';
+            document.getElementById('pfpPlaceholder').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    });
+}
 
 // ---------------- Pre-fill role from ?role= query param ----------------
 const urlParams = new URLSearchParams(window.location.search);
@@ -159,6 +176,18 @@ document.getElementById('authForm').addEventListener('submit', async function (e
             // but gives you a second confirmation signal per account.
             try { await user.sendEmailVerification(); } catch (e) { console.warn('Email verification send failed:', e); }
 
+            // Profile picture is optional — upload it only if one was chosen,
+            // so signup doesn't fail just because someone skipped this.
+            let profilePictureUrl = null;
+            const pfpFile = profilePictureInput && profilePictureInput.files[0];
+            if (pfpFile) {
+                try {
+                    profilePictureUrl = await uploadFile(pfpFile, `profile-pictures/${user.uid}`);
+                } catch (e) {
+                    console.warn('Profile picture upload failed, continuing without it:', e);
+                }
+            }
+
             // Note: `verified` starts FALSE on purpose — it only becomes true
             // once the uploaded ownership document has been manually reviewed.
             // `phoneVerified` also starts FALSE now — admin confirms this by
@@ -167,6 +196,8 @@ document.getElementById('authForm').addEventListener('submit', async function (e
                 name: name,
                 email: email,
                 phone: formattedPhone,
+                gender: genderInput ? genderInput.value : '',
+                profilePictureUrl: profilePictureUrl,
                 role: selectedRole,
                 rating: 0,
                 flags: 0,
@@ -174,7 +205,8 @@ document.getElementById('authForm').addEventListener('submit', async function (e
                 verified: false,
                 agentLevel: 1,          // agents start at Level 1, admin raises this via Firebase Console
                 landlordTier: 'new',    // 'new' -> 'established' -> 'trusted-portfolio', set by admin
-                strikeCount: 0,         // off-platform dealing / rule violations, admin increments
+                strikeCount: 0,         // "black flags" — admin-issued, private to the account owner
+                banCount: 0,             // how many times this account has been banned (2wk, then 4wk, then 6wk...)
                 suspendedUntil: null,   // admin sets a date to temporarily suspend an account
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
