@@ -56,7 +56,7 @@ function renderProperty() {
         <p class="price">₦${(p.price || 0).toLocaleString()}/year</p>
         <p class="location">📍 ${p.area ? escapeHtml(p.area) + ', ' : ''}${escapeHtml(p.city || '')}</p>
         <p style="color:#667;font-size:14px;margin-bottom:8px;">${escapeHtml(p.address || '')}</p>
-        ${p.verified ? `<span class="badge badge-verified">✅ Verified</span>` : `<span class="badge badge-pending">Pending review</span>`}
+        ${getListingBadge(p)}
         <div class="photo-row">${photos || '<p style="color:#999;">No photos uploaded yet.</p>'}</div>
         <p>${escapeHtml(p.description || '')}</p>
         <p style="margin-top:8px;color:#666;">🛏️ ${p.bedrooms || 0} bedroom(s) &middot; ${escapeHtml(p.propertyType || '')}</p>
@@ -68,6 +68,7 @@ function renderProperty() {
             ${applyButton}
         </div>
         <p><span class="flag-link" onclick="reportProperty()">🚩 Report this listing</span></p>
+        <div id="listedBySection" style="margin-top:12px;padding-top:12px;border-top:1px solid #eee;font-size:14px;color:#666;">Loading lister info...</div>
 
         <div class="review-section">
             <h3>Ratings <span id="avgRating"></span></h3>
@@ -90,6 +91,30 @@ function renderProperty() {
     }
 
     if (currentUserRole === 'tenant') attachStarInput();
+    loadListedBySection(p);
+}
+
+// Shows who posted this listing, with a link to their public profile
+// (so a tenant can check the agent/landlord's rating and flags before
+// reaching out). For agent-listed properties, also shows the landlord's
+// name on file since that's a separate person from the poster.
+async function loadListedBySection(p) {
+    const el = document.getElementById('listedBySection');
+    if (!el) return;
+    try {
+        const ownerDoc = await db.collection('users').doc(p.ownerId).get();
+        const ownerName = ownerDoc.exists ? ownerDoc.data().name : 'this account';
+        const ownerRoleLabel = p.ownerRole === 'agent' ? 'Agent' : 'Landlord';
+
+        let html = `Listed by <a href="profile.html?id=${p.ownerId}" style="color:var(--navy);font-weight:600;">${escapeHtml(ownerName)}</a> (${ownerRoleLabel})`;
+        if (p.ownerRole === 'agent' && p.landlordName) {
+            html += `<br>On behalf of landlord: ${escapeHtml(p.landlordName)}`;
+        }
+        el.innerHTML = html;
+    } catch (e) {
+        console.warn('Could not load lister info:', e);
+        el.textContent = '';
+    }
 }
 
 function renderReviewForm() {

@@ -4,14 +4,22 @@
 
 let allProperties = [];
 
-document.addEventListener('DOMContentLoaded', async () => {
+auth.onAuthStateChanged((user) => {
+    if (!user) {
+        window.location.href = 'login.html';
+        return;
+    }
+    initFeed();
+});
+
+async function initFeed() {
     const urlParams = new URLSearchParams(window.location.search);
     const q = urlParams.get('q');
     if (q) document.getElementById('searchBox').value = q;
 
     await loadProperties();
     applyFilters();
-});
+}
 
 async function loadProperties() {
     const grid = document.getElementById('feedGrid');
@@ -36,6 +44,7 @@ function applyFilters() {
     let filtered = allProperties.filter(p => {
         const matchesSearch = !searchTerm ||
             (p.title || '').toLowerCase().includes(searchTerm) ||
+            (p.area || '').toLowerCase().includes(searchTerm) ||
             (p.address || '').toLowerCase().includes(searchTerm) ||
             (p.city || '').toLowerCase().includes(searchTerm);
         const matchesCity = !city || p.city === city;
@@ -54,15 +63,19 @@ function applyFilters() {
 
     grid.innerHTML = filtered.map(p => {
         const rating = p.rating || 0;
+        const coverUrl = (p.photoUrls && p.photoUrls.length) ? p.photoUrls[p.coverIndex || 0] : null;
+        const thumb = coverUrl
+            ? `<div class="thumb" style="background-image:url('${coverUrl}');background-size:cover;background-position:center;"></div>`
+            : `<div class="thumb">🏠</div>`;
         return `
             <a href="property-details.html?id=${p.id}" class="property-card">
-                <div class="thumb">🏠</div>
+                ${thumb}
                 <div class="info">
                     <h3>${escapeHtml(p.title || 'Property')}</h3>
-                    <p class="location">📍 ${escapeHtml(p.city || '')}${p.address ? `, ${escapeHtml(p.address)}` : ''}</p>
+                    <p class="location">📍 ${p.area ? escapeHtml(p.area) + ', ' : ''}${escapeHtml(p.city || '')}</p>
                     <p class="price">₦${(p.price || 0).toLocaleString()}/year</p>
                     <p class="rating">${starString(rating)} ${rating.toFixed(1)}</p>
-                    ${p.verified ? `<span class="badge badge-verified">✅ Verified</span>` : `<span class="badge badge-pending">Pending review</span>`}
+                    ${getListingBadge(p)}
                 </div>
             </a>
         `;

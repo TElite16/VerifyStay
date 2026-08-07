@@ -53,7 +53,10 @@
 
     <div class="form-container">
         <h2>🏠 List Your Property</h2>
-        <p class="subtitle">Add details, location, and documents to get verified</p>
+        <p class="subtitle">Your listing goes live immediately — no waiting for approval.</p>
+        <div style="background:#F7F8FA; border:1px solid #e5e5e5; border-radius:8px; padding:14px 16px; margin-bottom:16px; font-size:14px; color:#333;">
+            Your listing shows a <strong>"Not yet verified"</strong> badge for the first 4 hours, then it disappears automatically. We still check every listing's documents behind the scenes — if anything doesn't match up, the listing comes down and an admin flag is added to your account. <strong>3 admin flags = a 2-week account suspension</strong> (4 weeks the second time, 6 the third, and so on).
+        </div>
 
         <div id="errorMessage" class="error-message"></div>
         <div id="successMessage" class="success-message">
@@ -62,8 +65,8 @@
 
         <form id="propertyForm">
             <div class="form-group">
-                <label>Property Title *</label>
-                <input type="text" id="title" placeholder="e.g., 3-Bedroom Flat in Surulere" required>
+                <label>Property / Building Name *</label>
+                <input type="text" id="title" placeholder="e.g., Golden Gate Apartments, Surulere" required>
             </div>
 
             <div class="form-group">
@@ -200,7 +203,7 @@
             </div>
 
             <div class="form-group">
-                <label>📄 Upload Document (Utility Bill or Land Document) *</label>
+                <label>🧾 Upload Utility Bill (proof of address) *</label>
                 <div class="file-upload-area" id="docUploadArea">
                     <p>📄 Click to upload document</p>
                     <p style="font-size: 13px; color: #666;">PHCN bill, water rate, C of O, or Deed of Assignment</p>
