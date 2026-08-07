@@ -14,7 +14,43 @@ auth.onAuthStateChanged(async (user) => {
     await loadUserData(user.uid);
     setupDashboard();
     loadListings();
+    loadAnnouncement();
 });
+
+// Shows the newest active announcement (posted by you via Firebase Console).
+// A user who dismisses it won't see the SAME announcement again on this device.
+async function loadAnnouncement() {
+    const banner = document.getElementById('announcementBanner');
+    try {
+        const snapshot = await db.collection('announcements')
+            .where('active', '==', true)
+            .orderBy('createdAt', 'desc')
+            .limit(1)
+            .get();
+
+        if (snapshot.empty) return;
+
+        const doc = snapshot.docs[0];
+        const data = doc.data();
+        const dismissedId = localStorage.getItem('verifystay_dismissed_announcement');
+        if (dismissedId === doc.id) return;
+
+        banner.innerHTML = `
+            <div class="announcement-banner">
+                <span>📢 ${escapeHtml(data.title || '')}${data.body ? ' — ' + escapeHtml(data.body) : ''}</span>
+                <button onclick="dismissAnnouncement('${doc.id}')">✕</button>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error loading announcement:', error);
+    }
+}
+
+function dismissAnnouncement(id) {
+    localStorage.setItem('verifystay_dismissed_announcement', id);
+    document.getElementById('announcementBanner').innerHTML = '';
+}
+window.dismissAnnouncement = dismissAnnouncement;
 
 async function loadUserData(uid) {
     try {
@@ -128,6 +164,7 @@ async function loadListings() {
                             ${escapeHtml(status)}
                         </span>
                         <a href="property-details.html?id=${propertyId}" style="margin-left: 12px;">View →</a>
+                        ${role !== 'tenant' ? `<a href="post-property.html?edit=${propertyId}" style="margin-left: 12px;">✏️ Edit</a>` : ''}
                     </div>
                 </div>
             `;
