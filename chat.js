@@ -149,7 +149,7 @@ async function openThread(otherUid, propertyId, propertyTitle) {
         listenForMessages();
     } catch (error) {
         console.error('Error opening thread:', error);
-        container.innerHTML = '<p style="color:#c62828;">Could not open this conversation.</p>';
+        container.innerHTML = `<p style="color:#c62828;">Could not open this conversation: ${escapeHtml(error.message)}</p><p style="font-size:13px;color:#999;">If this says "permission" or "insufficient", the Firestore rules need to be republished in Firebase Console.</p>`;
     }
 }
 

@@ -376,8 +376,18 @@ footer a:hover { color: var(--gold-bright); }
 }
 
 @media (max-width: 768px) {
-    .nav-links { display: none; }
+    /* Consolidate Dashboard/Rules/Logout into the hamburger drawer on
+       mobile instead of cramming them inline next to the logo — the
+       drawer already has all of these plus more (Messages, Profile,
+       Market, Notifications). #sideDrawerBtn is a <button>, not an <a>,
+       so this rule doesn't touch it. */
+    .nav-links a { display: none; }
     .hero h1 { font-size: 32px; }
     .search-box { flex-direction: column; }
-    .property-grid { grid-template-columns: 1fr; }
+    .property-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .property-card .thumb { height: 110px; font-size: 26px; }
+    .property-card .info { padding: 10px; }
+    .property-card .info h3 { font-size: 14px; }
+    .property-card .info .location, .property-card .info .rating { font-size: 11px; }
+    .property-card .info .price { font-size: 13px; }
 }

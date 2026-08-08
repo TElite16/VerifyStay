@@ -31,6 +31,22 @@ function syncLogoLink(user) {
 // property, dashboard sections, etc. Falls back to a sensible page (not
 // just closing the tab) when there's no real history to go back to —
 // e.g. someone opened the page fresh from a bookmark or shared link.
+// Small clickable profile-picture circle placed directly beside the logo
+// (left-aligned together, not floating center) — tapping it goes to your
+// profile, same as tapping your photo in the side drawer.
+function injectNavAvatar(photoUrl) {
+    if (document.getElementById('navAvatar')) return;
+    const logo = document.querySelector('.navbar a.logo');
+    if (!logo) return;
+
+    const avatar = document.createElement('a');
+    avatar.id = 'navAvatar';
+    avatar.href = 'profile.html';
+    avatar.style.cssText = 'width:30px;height:30px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#F7F8FA;border:2px solid #C9A227;margin-right:8px;flex-shrink:0;font-size:15px;';
+    avatar.innerHTML = photoUrl ? `<img src="${photoUrl}" alt="" style="width:100%;height:100%;object-fit:cover;">` : '👤';
+    logo.parentElement.insertBefore(avatar, logo);
+}
+
 function injectBackButton(fallbackHref) {
     const isHome = /(^|\/)index\.html$/.test(window.location.pathname) || window.location.pathname.endsWith('/');
     if (isHome) return;
@@ -76,6 +92,8 @@ async function injectSideDrawer(user) {
             photoUrl = d.profilePictureUrl || null;
         }
     } catch (e) { console.warn('Could not load user info for drawer:', e); }
+
+    injectNavAvatar(photoUrl);
 
     const myListingsLabel = role === 'tenant' ? 'My Applications' : 'My Properties';
 
