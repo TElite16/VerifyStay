@@ -13,14 +13,30 @@
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="icon" type="image/png" href="icon-192.png">
     <style>
-        .feed-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .feed-container { max-width: 1400px; margin: 0 auto 30px; padding: 0 20px; }
         .feed-filters {
-            display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px;
-            background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex; gap: 12px; flex-wrap: wrap; margin: -30px 0 24px;
+            background: white; padding: 16px; border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+            position: relative; z-index: 2;
         }
         .feed-filters select, .feed-filters input {
             padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px;
         }
+        .feed-hero {
+            background: linear-gradient(135deg, var(--navy), var(--navy-dark));
+            color: #fff; padding: 40px 20px 60px; text-align: center; margin-bottom: 0;
+        }
+        .feed-hero h1 { font-family: 'Fraunces', serif; font-size: 32px; margin-bottom: 6px; }
+        .feed-hero p { opacity: 0.9; }
+        .pagination-controls {
+            display: flex; justify-content: center; align-items: center; gap: 16px; margin: 30px 0;
+        }
+        .pagination-controls button {
+            padding: 10px 20px; border-radius: 8px; border: 1px solid var(--navy);
+            background: white; color: var(--navy); font-weight: 600; cursor: pointer;
+        }
+        .pagination-controls button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .pagination-controls span { color: #666; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -35,8 +51,12 @@
         </div>
     </nav>
 
+    <div class="feed-hero">
+        <h1>🔥 Verified Listings</h1>
+        <p>Every listing is manually reviewed — browse what's currently live.</p>
+    </div>
+
     <div class="feed-container">
-        <h1>Browse Properties</h1>
         <div class="feed-filters">
             <input type="text" id="searchBox" placeholder="Search by title or area...">
             <select id="cityFilter">
@@ -85,6 +105,12 @@
 
         <div class="property-grid" id="feedGrid">
             <p style="color:#999;">Loading properties...</p>
+        </div>
+
+        <div class="pagination-controls" id="paginationControls" style="display:none;">
+            <button id="prevPageBtn">← Previous</button>
+            <span id="pageIndicator">Page 1</span>
+            <button id="nextPageBtn">Next →</button>
         </div>
     </div>
 

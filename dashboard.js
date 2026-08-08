@@ -75,6 +75,7 @@ function setupDashboard() {
     if (role === 'tenant') {
         actions = [
             { icon: '🔍', label: 'Browse Properties', link: 'feed.html' },
+            { icon: '💬', label: 'Messages', link: 'chat.html' },
             { icon: '⭐', label: 'My Ratings Given', link: 'profile.html' },
             { icon: '🚩', label: 'Report an Issue', link: 'dispute.html' }
         ];
@@ -83,6 +84,8 @@ function setupDashboard() {
         actions = [
             { icon: '➕', label: 'Post Property', link: 'post-property.html' },
             { icon: '📋', label: 'My Properties', link: '#properties' },
+            { icon: '🏬', label: 'Market (browse listings)', link: 'feed.html' },
+            { icon: '💬', label: 'Messages', link: 'chat.html' },
             { icon: '⚖️', label: 'Raise Dispute with Agent', link: 'dispute.html' }
         ];
         document.getElementById('listingTitle').textContent = 'Your Properties';
@@ -90,6 +93,8 @@ function setupDashboard() {
         actions = [
             { icon: '➕', label: 'Post Property', link: 'post-property.html' },
             { icon: '📋', label: 'Managed Properties', link: '#properties' },
+            { icon: '🏬', label: 'Market (browse listings)', link: 'feed.html' },
+            { icon: '💬', label: 'Messages', link: 'chat.html' },
             { icon: '⚖️', label: 'Dispute Mediation', link: 'dispute.html' }
         ];
         document.getElementById('listingTitle').textContent = 'Properties You Manage';
@@ -134,43 +139,54 @@ async function loadListings() {
             return;
         }
 
-        let html = '';
-        // For tenants, applications don't carry a full property snapshot,
-        // so we look up each linked property's basic info to display.
+        // Tile cards, same visual style as Feed/Browse — for tenants we
+        // fetch the full property behind each application; for landlords/
+        // agents the properties ARE the documents already.
+        const cards = [];
         for (const doc of snapshot.docs) {
             const data = doc.data();
-            let title = data.title;
-            let propertyId = doc.id;
-            let status = data.status || 'pending';
+            let propertyId, status, property;
 
             if (role === 'tenant') {
                 propertyId = data.propertyId;
                 status = data.status || 'pending';
                 try {
-                    const propDoc = await db.collection('properties').doc(data.propertyId).get();
-                    title = propDoc.exists ? propDoc.data().title : 'Property';
+                    const propDoc = await db.collection('properties').doc(propertyId).get();
+                    property = propDoc.exists ? propDoc.data() : { title: 'Property' };
                 } catch (e) {
-                    title = 'Property';
+                    property = { title: 'Property' };
                 }
+            } else {
+                propertyId = doc.id;
+                status = data.status || 'active';
+                property = data;
             }
 
-            html += `
-                <div class="listing-item">
-                    <div>
-                        <strong>${escapeHtml(title || 'Property')}</strong>
-                    </div>
-                    <div>
-                        <span class="status-badge ${status === 'active' ? 'status-active' : status === 'flagged' ? 'status-flagged' : 'status-pending'}">
-                            ${escapeHtml(status)}
-                        </span>
-                        <a href="property-details.html?id=${propertyId}" style="margin-left: 12px;">View →</a>
-                        ${role !== 'tenant' ? `<a href="post-property.html?edit=${propertyId}" style="margin-left: 12px;">✏️ Edit</a>` : ''}
-                    </div>
+            const rating = property.rating || 0;
+            const coverUrl = (property.photoUrls && property.photoUrls.length) ? property.photoUrls[property.coverIndex || 0] : null;
+            const thumb = coverUrl
+                ? `<div class="thumb" style="background-image:url('${coverUrl}');background-size:cover;background-position:center;"></div>`
+                : `<div class="thumb">🏠</div>`;
+            const statusClass = status === 'active' ? 'status-active' : status === 'flagged' ? 'status-flagged' : 'status-pending';
+
+            cards.push(`
+                <div class="property-card" style="position:relative;">
+                    <span class="status-badge ${statusClass}" style="position:absolute;top:10px;right:10px;background:#fff;z-index:1;">${escapeHtml(status)}</span>
+                    <a href="property-details.html?id=${propertyId}" style="text-decoration:none;color:inherit;">
+                        ${thumb}
+                        <div class="info">
+                            <h3>${escapeHtml(property.title || 'Property')}</h3>
+                            <p class="location">📍 ${property.area ? escapeHtml(property.area) + ', ' : ''}${escapeHtml(property.city || '')}</p>
+                            ${property.price ? `<p class="price">₦${property.price.toLocaleString()}/year</p>` : ''}
+                            <p class="rating">${starString(rating)} ${rating.toFixed(1)}</p>
+                        </div>
+                    </a>
+                    ${role !== 'tenant' ? `<div style="padding:0 16px 14px;"><a href="post-property.html?edit=${propertyId}">✏️ Edit</a></div>` : ''}
                 </div>
-            `;
+            `);
         }
 
-        container.innerHTML = html;
+        container.innerHTML = `<div class="property-grid">${cards.join('')}</div>`;
     } catch (error) {
         console.error('Error loading listings:', error);
         container.innerHTML = '<p style="color: #c62828;">Error loading listings. Please refresh.</p>';

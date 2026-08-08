@@ -22,7 +22,7 @@ function starString(rating) {
 // is loaded everywhere.
 function syncLogoLink(user) {
     document.querySelectorAll('a.logo').forEach(a => {
-        a.href = user ? 'feed.html' : 'index.html';
+        a.href = user ? 'feed.html' : 'login.html';
     });
 }
 
@@ -107,13 +107,14 @@ async function injectSideDrawer(user) {
         <div class="drawer-section-label">Menu</div>
         <a class="drawer-link" href="dashboard.html">📊 Dashboard</a>
         <a class="drawer-link" href="dashboard.html#properties">📋 ${myListingsLabel}</a>
-        <a class="drawer-link" href="feed.html">🔍 Browse Properties</a>
+        <a class="drawer-link" href="feed.html">${role === 'tenant' ? '🔍 Browse Properties' : '🏬 Market'}</a>
         <a class="drawer-link" href="profile.html">👤 My Profile</a>
 
         <div class="drawer-section-label">Help &amp; Support</div>
         <a class="drawer-link" href="rules.html">📜 Platform Rules</a>
-        <a class="drawer-link" href="#">🔔 Notifications <span class="soon">Soon</span></a>
-        <a class="drawer-link" href="#">💬 Support <span class="soon">Soon</span></a>
+        <a class="drawer-link" href="notifications.html">🔔 Notifications <span class="soon" id="notifBadge" style="background:#c62828;color:#fff;display:none;"></span></a>
+        <a class="drawer-link" href="chat.html">💬 Messages</a>
+        <a class="drawer-link" href="#">🆘 Support <span class="soon">Soon</span></a>
 
         <div style="margin-top:auto;"></div>
         <a class="drawer-link logout" href="#" id="drawerLogoutLink">🚪 Logout</a>
@@ -245,9 +246,114 @@ function getListingBadge(data) {
 }
 window.getListingBadge = getListingBadge;
 
+// ---------------------------------------------------------------
+// CHAT + NOTIFICATIONS (Fiverr-style: applying to a property or tapping
+// "Message" on a profile opens a thread; a bell shows unread count)
+// ---------------------------------------------------------------
+
+// Deterministic chat ID so the same two people (about the same property,
+// if any) always land in the SAME thread — no duplicate conversations.
+function buildChatId(uidA, uidB, propertyId) {
+    const sorted = [uidA, uidB].sort();
+    return propertyId ? `${sorted[0]}_${sorted[1]}_${propertyId}` : `${sorted[0]}_${sorted[1]}`;
+}
+
+// Creates the chat doc if it doesn't exist yet, then returns its ID.
+async function getOrCreateChat(myUid, otherUid, propertyId, propertyTitle) {
+    const chatId = buildChatId(myUid, otherUid, propertyId || null);
+    const ref = db.collection('chats').doc(chatId);
+    const doc = await ref.get();
+    if (!doc.exists) {
+        await ref.set({
+            participants: [myUid, otherUid],
+            propertyId: propertyId || null,
+            propertyTitle: propertyTitle || null,
+            lastMessage: '',
+            lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+            lastMessageBy: null,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    }
+    return chatId;
+}
+window.getOrCreateChat = getOrCreateChat;
+
+// Sends a message in an existing chat and updates the thread preview.
+async function sendChatMessage(chatId, senderId, text) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    await db.collection('chats').doc(chatId).collection('messages').add({
+        senderId: senderId,
+        text: trimmed,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        read: false
+    });
+    await db.collection('chats').doc(chatId).update({
+        lastMessage: trimmed,
+        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastMessageBy: senderId
+    });
+}
+window.sendChatMessage = sendChatMessage;
+
+// Creates an in-app notification for someone else (new message, new
+// application, etc). `link` is where tapping the notification goes.
+async function createNotification(userId, type, text, link) {
+    try {
+        await db.collection('notifications').add({
+            userId: userId,
+            type: type,
+            text: text,
+            link: link,
+            read: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (e) {
+        console.warn('Could not create notification:', e);
+    }
+}
+window.createNotification = createNotification;
+
+// Live-updates the notification badge count in the sidebar drawer,
+// and plays a soft sound for a NEW unread notification while the app
+// is open (this only works while the tab is open, not a true push
+// notification — that needs extra setup we're holding off on for now).
+let lastKnownUnreadCount = null;
+function watchNotificationBadge(uid) {
+    db.collection('notifications')
+        .where('userId', '==', uid)
+        .where('read', '==', false)
+        .onSnapshot(snapshot => {
+            const count = snapshot.size;
+            const badge = document.getElementById('notifBadge');
+            if (badge) badge.textContent = count > 0 ? count : '';
+            if (badge) badge.style.display = count > 0 ? 'inline-block' : 'none';
+
+            if (lastKnownUnreadCount !== null && count > lastKnownUnreadCount) {
+                playNotificationSound();
+            }
+            lastKnownUnreadCount = count;
+        }, err => console.warn('Notification badge listener error:', err));
+}
+
+function playNotificationSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+    } catch (e) { /* audio not available, silently skip */ }
+}
+
 function logout() {
     auth.signOut().then(() => {
-        window.location.href = 'index.html';
+        window.location.href = 'login.html';
     }).catch((error) => {
         console.error('Logout error:', error);
     });
@@ -261,8 +367,8 @@ window.logout = logout;
 // whether to show real listings or the locked/sign-in prompt.
 auth.onAuthStateChanged(async (user) => {
     syncLogoLink(user);
-    injectBackButton(user ? 'dashboard.html' : 'index.html');
-    injectSideDrawer(user);
+    injectBackButton(user ? 'dashboard.html' : 'login.html');
+    await injectSideDrawer(user);
 
     const browseCta = document.getElementById('browseCta');
     if (browseCta) {
@@ -272,6 +378,7 @@ auth.onAuthStateChanged(async (user) => {
     if (user) {
         await checkAndApplyBan(user.uid);
         await renderSuspensionBanner(user.uid);
+        watchNotificationBadge(user.uid);
     }
 });
 

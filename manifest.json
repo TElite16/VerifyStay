@@ -2,7 +2,7 @@
   "name": "VerifyStay",
   "short_name": "VerifyStay",
   "description": "Rent Without Regret — verified rental listings in Nigeria",
-  "start_url": "index.html",
+  "start_url": "login.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#F7F8FA",

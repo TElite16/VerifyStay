@@ -230,14 +230,17 @@ function attachTenantStarInput() {
 async function submitTenantReview() {
     if (selectedTenantStars === 0) { alert('Please select a star rating first.'); return; }
     try {
-        await db.collection('tenantReviews').add({
+        // Deterministic ID means each landlord/agent can only leave ONE
+        // rating per tenant — submitting again updates it, no duplicates.
+        const reviewId = `${viewedUid}_${currentUser.uid}`;
+        await db.collection('tenantReviews').doc(reviewId).set({
             tenantId: viewedUid,
             raisedBy: currentUser.uid,
             rating: selectedTenantStars,
             comment: document.getElementById('tenantReviewComment').value.trim(),
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        alert('Thanks — your rating was submitted.');
+        alert('Thanks — your rating was saved.');
         loadStatsAndFeedback('tenant', viewedUid, false);
     } catch (error) {
         console.error('Error submitting tenant review:', error);

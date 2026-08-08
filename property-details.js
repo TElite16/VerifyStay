@@ -50,6 +50,9 @@ function renderProperty() {
     const applyButton = (currentUserRole === 'tenant')
         ? `<button class="btn btn-primary" onclick="applyToProperty()">Apply / Contact Agent</button>`
         : '';
+    const messageButton = (currentUser && p.ownerId !== currentUser.uid)
+        ? `<a class="btn btn-outline" href="chat.html?with=${p.ownerId}&propertyId=${propertyId}&propertyTitle=${encodeURIComponent(p.title || 'Property')}">💬 Message</a>`
+        : '';
 
     card.innerHTML = `
         <h1>${escapeHtml(p.title || 'Property')}</h1>
@@ -63,8 +66,8 @@ function renderProperty() {
 
         <div id="detailMap"></div>
         <div class="action-row">
-            <a class="btn btn-outline" id="directionsBtn" target="_blank" rel="noopener">📍 Get Directions</a>
             <a class="btn btn-outline" id="googleMapsBtn" target="_blank" rel="noopener">🗺️ View on Google Maps</a>
+            ${messageButton}
             ${applyButton}
         </div>
         <p><span class="flag-link" onclick="reportProperty()">🚩 Report this listing</span></p>
@@ -84,14 +87,33 @@ function renderProperty() {
         }).addTo(map);
         L.marker([p.latitude, p.longitude]).addTo(map);
 
-        document.getElementById('directionsBtn').href =
-            `https://www.openstreetmap.org/directions?to=${p.latitude}%2C${p.longitude}`;
         document.getElementById('googleMapsBtn').href =
             `https://www.google.com/maps/search/?api=1&query=${p.latitude}%2C${p.longitude}`;
     }
 
-    if (currentUserRole === 'tenant') attachStarInput();
+    if (currentUserRole === 'tenant') { attachStarInput(); loadExistingReview(); }
     loadListedBySection(p);
+}
+
+// If this tenant already reviewed this property, prefill the form with
+// their existing rating/comment and switch the button to "Update Rating".
+async function loadExistingReview() {
+    if (!currentUser) return;
+    try {
+        const doc = await db.collection('reviews').doc(`${propertyId}_${currentUser.uid}`).get();
+        if (!doc.exists) return;
+        const d = doc.data();
+        selectedStars = d.rating;
+        document.querySelectorAll('#starInput button').forEach(b => {
+            b.classList.toggle('active', parseInt(b.dataset.star) <= selectedStars);
+        });
+        const commentEl = document.getElementById('reviewComment');
+        if (commentEl) commentEl.value = d.comment || '';
+        const submitBtn = document.querySelector('#starInput').parentElement.querySelector('button.btn-primary');
+        if (submitBtn) submitBtn.textContent = 'Update Rating';
+    } catch (e) {
+        console.warn('Could not check for existing review:', e);
+    }
 }
 
 // Shows who posted this listing, with a link to their public profile
@@ -151,14 +173,18 @@ async function submitReview() {
         return;
     }
     try {
-        await db.collection('reviews').add({
+        // Deterministic ID (propertyId_tenantId) means a tenant can only
+        // ever have ONE review per property — submitting again updates
+        // their existing review instead of creating a duplicate.
+        const reviewId = `${propertyId}_${currentUser.uid}`;
+        await db.collection('reviews').doc(reviewId).set({
             propertyId: propertyId,
             tenantId: currentUser.uid,
             rating: selectedStars,
             comment: document.getElementById('reviewComment').value.trim(),
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        alert('Thanks — your rating was submitted.');
+        alert('Thanks — your rating was saved.');
         loadReviews();
     } catch (error) {
         console.error('Error submitting review:', error);
@@ -213,7 +239,12 @@ async function applyToProperty() {
             status: 'pending',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        alert('Application sent! The agent/landlord will be notified.');
+
+        await createNotification(propertyData.ownerId, 'application', `New application for "${propertyData.title}"`, `chat.html?with=${currentUser.uid}`);
+
+        // Straight into a live conversation with the owner — this is the
+        // actual "contact" part, not just a silent application record.
+        window.location.href = `chat.html?with=${propertyData.ownerId}&propertyId=${propertyId}&propertyTitle=${encodeURIComponent(propertyData.title || 'Property')}`;
     } catch (error) {
         console.error('Error applying:', error);
         alert('Could not send application: ' + error.message);

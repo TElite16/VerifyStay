@@ -3,6 +3,9 @@
 // =====================
 
 let allProperties = [];
+let filteredProperties = [];
+let currentPage = 1;
+const PAGE_SIZE = 30; // 5 columns x 6 rows on wide screens
 
 auth.onAuthStateChanged((user) => {
     if (!user) {
@@ -19,6 +22,14 @@ async function initFeed() {
 
     await loadProperties();
     applyFilters();
+
+    document.getElementById('prevPageBtn').addEventListener('click', () => {
+        if (currentPage > 1) { currentPage--; renderPage(); }
+    });
+    document.getElementById('nextPageBtn').addEventListener('click', () => {
+        const maxPage = Math.ceil(filteredProperties.length / PAGE_SIZE);
+        if (currentPage < maxPage) { currentPage++; renderPage(); }
+    });
 }
 
 async function loadProperties() {
@@ -37,11 +48,10 @@ async function loadProperties() {
 }
 
 function applyFilters() {
-    const grid = document.getElementById('feedGrid');
     const searchTerm = document.getElementById('searchBox').value.trim().toLowerCase();
     const city = document.getElementById('cityFilter').value;
 
-    let filtered = allProperties.filter(p => {
+    filteredProperties = allProperties.filter(p => {
         const matchesSearch = !searchTerm ||
             (p.title || '').toLowerCase().includes(searchTerm) ||
             (p.area || '').toLowerCase().includes(searchTerm) ||
@@ -51,17 +61,30 @@ function applyFilters() {
         return matchesSearch && matchesCity;
     });
 
-    if (filtered.length === 0) {
+    currentPage = 1;
+    renderPage();
+}
+
+function renderPage() {
+    const grid = document.getElementById('feedGrid');
+    const pagination = document.getElementById('paginationControls');
+
+    if (filteredProperties.length === 0) {
         grid.innerHTML = `
             <div style="grid-column:1/-1;text-align:center;padding:40px;color:#999;">
                 <p style="font-size:40px;">🔍</p>
                 <p>No properties match your search.</p>
             </div>
         `;
+        pagination.style.display = 'none';
         return;
     }
 
-    grid.innerHTML = filtered.map(p => {
+    const maxPage = Math.ceil(filteredProperties.length / PAGE_SIZE);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageItems = filteredProperties.slice(start, start + PAGE_SIZE);
+
+    grid.innerHTML = pageItems.map(p => {
         const rating = p.rating || 0;
         const coverUrl = (p.photoUrls && p.photoUrls.length) ? p.photoUrls[p.coverIndex || 0] : null;
         const thumb = coverUrl
@@ -80,6 +103,12 @@ function applyFilters() {
             </a>
         `;
     }).join('');
+
+    pagination.style.display = maxPage > 1 ? 'flex' : 'none';
+    document.getElementById('pageIndicator').textContent = `Page ${currentPage} of ${maxPage}`;
+    document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+    document.getElementById('nextPageBtn').disabled = currentPage >= maxPage;
+    window.scrollTo({ top: grid.offsetTop - 80, behavior: 'smooth' });
 }
 
 window.applyFilters = applyFilters;
