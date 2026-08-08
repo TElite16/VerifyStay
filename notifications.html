@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - VerifyStay</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0F2C59">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <style>
+        .notif-container { max-width: 640px; margin: 20px auto; padding: 0 16px; }
+        .notif-item {
+            display: flex; align-items: flex-start; gap: 12px; padding: 14px;
+            background: #fff; border-radius: 10px; margin-bottom: 8px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.06); text-decoration: none; color: inherit;
+        }
+        .notif-item.unread { border-left: 4px solid #C9A227; }
+        .notif-item .icon { font-size: 20px; flex-shrink: 0; }
+        .notif-item .body { flex: 1; }
+        .notif-item .time { font-size: 12px; color: #999; margin-top: 2px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="dashboard.html" class="logo" style="text-decoration:none;"><svg width="26" height="26" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><circle cx="100" cy="100" r="96" fill="#0F2C59"/><polygon points="60,96 100,58 140,96" fill="#E8C547"/><rect x="68" y="96" width="64" height="48" rx="3" fill="#F7F8FA"/><rect x="92" y="118" width="16" height="26" rx="2" fill="#0F2C59"/><circle cx="146" cy="138" r="30" fill="#C9A227" stroke="#F7F8FA" stroke-width="5"/><path d="M133,138 L143,148 L161,127" fill="none" stroke="#F7F8FA" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg> VerifyStay</a>
+            <div class="nav-links">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="rules.html">Rules</a>
+                <a href="#" onclick="logout()" class="btn btn-outline">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="notif-container" id="notifContainer">
+        <h2>🔔 Notifications</h2>
+        <p style="color:#999;">Loading...</p>
+    </div>
+
+    <!-- Firebase SDKs (compat) — must load before firebase-config.js on EVERY page -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+    <script src="notifications.js"></script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>

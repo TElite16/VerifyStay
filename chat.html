@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - VerifyStay</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0F2C59">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <style>
+        .chat-container { max-width: 640px; margin: 20px auto; padding: 0 16px; }
+        .thread-item {
+            display: flex; align-items: center; gap: 12px; padding: 14px;
+            background: #fff; border-radius: 10px; margin-bottom: 10px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.06); text-decoration: none; color: inherit;
+        }
+        .thread-item .avatar {
+            width: 44px; height: 44px; border-radius: 50%; background: #F7F8FA;
+            display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+            border: 2px solid #C9A227; overflow: hidden;
+        }
+        .thread-item .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .thread-item .meta { flex: 1; min-width: 0; }
+        .thread-item .meta .name { font-weight: 600; }
+        .thread-item .meta .preview { font-size: 13px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .thread-item .unread-dot { width: 10px; height: 10px; border-radius: 50%; background: #c62828; flex-shrink: 0; }
+
+        .chat-thread { display: flex; flex-direction: column; height: calc(100vh - 200px); }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 10px; background: #F7F8FA; border-radius: 10px; }
+        .msg-bubble { max-width: 75%; padding: 10px 14px; border-radius: 14px; margin-bottom: 8px; font-size: 15px; }
+        .msg-mine { background: #0F2C59; color: #fff; margin-left: auto; border-bottom-right-radius: 4px; }
+        .msg-theirs { background: #fff; border: 1px solid #eee; margin-right: auto; border-bottom-left-radius: 4px; }
+        .chat-input-row { display: flex; gap: 8px; margin-top: 10px; }
+        .chat-input-row input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 24px; font-size: 15px; }
+        .chat-input-row button { padding: 0 20px; border-radius: 24px; }
+        .chat-thread-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="dashboard.html" class="logo" style="text-decoration:none;"><svg width="26" height="26" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><circle cx="100" cy="100" r="96" fill="#0F2C59"/><polygon points="60,96 100,58 140,96" fill="#E8C547"/><rect x="68" y="96" width="64" height="48" rx="3" fill="#F7F8FA"/><rect x="92" y="118" width="16" height="26" rx="2" fill="#0F2C59"/><circle cx="146" cy="138" r="30" fill="#C9A227" stroke="#F7F8FA" stroke-width="5"/><path d="M133,138 L143,148 L161,127" fill="none" stroke="#F7F8FA" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg> VerifyStay</a>
+            <div class="nav-links">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="rules.html">Rules</a>
+                <a href="#" onclick="logout()" class="btn btn-outline">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="chat-container" id="chatContainer">
+        <p style="color:#999;">Loading...</p>
+    </div>
+
+    <!-- Firebase SDKs (compat) — must load before firebase-config.js on EVERY page -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+    <script src="chat.js"></script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>
