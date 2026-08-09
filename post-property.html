@@ -139,8 +139,26 @@
             </div>
 
             <div class="form-group">
-                <label>Annual Rent (₦) *</label>
+                <label>House Rent (₦/year) *</label>
                 <input type="number" id="price" placeholder="e.g., 2500000" required>
+                <div id="feePreview" style="font-size:13px;color:#666;margin-top:6px;"></div>
+            </div>
+
+            <div class="form-group" style="background:#F7F8FA;border-radius:8px;padding:14px;">
+                <p style="font-weight:600;margin-bottom:8px;">Pricing Breakdown (shown to tenants)</p>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <span>House Rent</span><span id="breakdownRent">₦0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <span>Maintenance Fee (10% of rent)</span><span id="breakdownMaintenance">₦0</span>
+                </div>
+                <div id="managementFeeRow" style="display:none;justify-content:space-between;margin-bottom:4px;">
+                    <span>Management Fee (10% agency + 10% legal)</span><span id="breakdownManagement">₦0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid #ddd;padding-top:6px;margin-top:4px;">
+                    <span>Total Annual Cost</span><span id="breakdownTotal">₦0</span>
+                </div>
+                <div class="help-text">Maintenance fee is automatic (10% of rent) for everyone. Agents also add a management fee (10% agency + 10% legal), same as standard Nigerian agency practice — this is the actual amount the tenant pays, not just the rent.</div>
             </div>
 
             <div class="form-group">

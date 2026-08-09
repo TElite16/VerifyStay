@@ -277,6 +277,33 @@ function getUnitsInfo(data) {
 }
 window.getUnitsInfo = getUnitsInfo;
 
+// The one place the rent breakdown formula lives, so it's identical
+// everywhere it's shown (Market, Dashboard, property page):
+//   - House Rent: whatever the landlord/agent set
+//   - Maintenance Fee: always 10% of rent
+//   - Management Fee: agent listings only — 10% agency + 10% legal = 20% of rent
+function getPriceBreakdown(p) {
+    const rent = p.price || 0;
+    const maintenanceFee = Math.round(rent * 0.10);
+    const isAgentListing = p.ownerRole === 'agent';
+    const managementFee = isAgentListing ? Math.round(rent * 0.20) : 0;
+    const total = rent + maintenanceFee + managementFee;
+    return { rent, maintenanceFee, managementFee, total, isAgentListing };
+}
+window.getPriceBreakdown = getPriceBreakdown;
+
+// Compact one-line version for listing cards (Market/Dashboard tiles) —
+// full line-by-line breakdown is reserved for the property detail page,
+// where there's room to show it properly.
+function getPriceSummaryHtml(p) {
+    const b = getPriceBreakdown(p);
+    return `
+        <p class="price">₦${b.rent.toLocaleString()}/year<span style="font-weight:400;color:#666;font-size:12px;"> + fees</span></p>
+        <p style="font-size:12px;color:#666;">Total incl. fees: ₦${b.total.toLocaleString()}/year</p>
+    `;
+}
+window.getPriceSummaryHtml = getPriceSummaryHtml;
+
 // ---------------------------------------------------------------
 // CHAT + NOTIFICATIONS (Fiverr-style: applying to a property or tapping
 // "Message" on a profile opens a thread; a bell shows unread count)
