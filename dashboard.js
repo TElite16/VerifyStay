@@ -179,6 +179,7 @@ async function loadListings() {
                             <p class="location">📍 ${property.area ? escapeHtml(property.area) + ', ' : ''}${escapeHtml(property.city || '')}</p>
                             ${property.price ? `<p class="price">₦${property.price.toLocaleString()}/year</p>` : ''}
                             <p class="rating">${starString(rating)} ${rating.toFixed(1)}</p>
+                            ${role !== 'tenant' ? getUnitsInfo(property) : ''}
                         </div>
                     </a>
                     ${role !== 'tenant' ? `<div style="padding:0 16px 14px;"><a href="post-property.html?edit=${propertyId}">✏️ Edit</a></div>` : ''}

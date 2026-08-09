@@ -264,6 +264,19 @@ function getListingBadge(data) {
 }
 window.getListingBadge = getListingBadge;
 
+// Shows "X of Y units available" for multi-unit buildings only — a
+// standalone single-unit listing (the normal case) shows nothing extra.
+function getUnitsInfo(data) {
+    const total = data.unitsTotal || 1;
+    if (total <= 1) return '';
+    const available = (typeof data.unitsAvailable === 'number') ? data.unitsAvailable : total;
+    if (available <= 0) {
+        return `<span class="badge" style="background:#ffebee;color:#c62828;">Fully occupied (0/${total})</span>`;
+    }
+    return `<span class="badge" style="background:#e8f5e9;color:#2e7d32;">${available} of ${total} units available</span>`;
+}
+window.getUnitsInfo = getUnitsInfo;
+
 // ---------------------------------------------------------------
 // CHAT + NOTIFICATIONS (Fiverr-style: applying to a property or tapping
 // "Message" on a profile opens a thread; a bell shows unread count)

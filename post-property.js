@@ -15,6 +15,7 @@ let editPropertyId = null;
 let existingPhotoUrls = [];
 let existingCoverIndex = 0;
 let existingDocUrl = null;
+let existingUnitsAvailable = null;
 
 auth.onAuthStateChanged(async (user) => {
     if (!user) {
@@ -80,6 +81,8 @@ async function loadPropertyForEdit(propertyId, userId) {
         document.getElementById('address').value = p.address || '';
         document.getElementById('price').value = p.price || '';
         document.getElementById('bedrooms').value = p.bedrooms || '';
+        document.getElementById('unitsTotal').value = p.unitsTotal || 1;
+        existingUnitsAvailable = (typeof p.unitsAvailable === 'number') ? p.unitsAvailable : (p.unitsTotal || 1);
         document.getElementById('description').value = p.description || '';
 
         if (currentRole === 'agent') {
@@ -389,6 +392,11 @@ function setupFormSubmit(userId) {
                     verificationWindowStart: firebase.firestore.FieldValue.serverTimestamp(),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
+                const newUnitsTotal = Math.max(1, parseInt(document.getElementById('unitsTotal').value) || 1);
+                updateData.unitsTotal = newUnitsTotal;
+                // Can't have more units "available" than the total — clamp down
+                // if the total was corrected to something smaller than before.
+                updateData.unitsAvailable = Math.min(existingUnitsAvailable !== null ? existingUnitsAvailable : newUnitsTotal, newUnitsTotal);
                 if (currentRole === 'agent') {
                     updateData.landlordName = document.getElementById('landlordName').value.trim() || null;
                     updateData.landlordPhone = document.getElementById('landlordPhone').value.trim() || null;
@@ -413,6 +421,8 @@ function setupFormSubmit(userId) {
                     coverIndex: finalCoverIndex,
                     ownerId: userId,
                     ownerRole: ownerRole,
+                    unitsTotal: Math.max(1, parseInt(document.getElementById('unitsTotal').value) || 1),
+                    unitsAvailable: Math.max(1, parseInt(document.getElementById('unitsTotal').value) || 1), // all units start available
                     status: 'active',   // goes live immediately — no more admin approval gate
                     verified: false,     // optional extra badge an admin can still grant after reviewing the utility bill
                     verificationWindowStart: firebase.firestore.FieldValue.serverTimestamp(), // drives the 4-hour "Not yet verified" badge

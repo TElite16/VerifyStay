@@ -63,6 +63,16 @@ function renderProperty() {
         <div class="photo-row">${photos || '<p style="color:#999;">No photos uploaded yet.</p>'}</div>
         <p>${escapeHtml(p.description || '')}</p>
         <p style="margin-top:8px;color:#666;">🛏️ ${p.bedrooms || 0} bedroom(s) &middot; ${escapeHtml(p.propertyType || '')}</p>
+        <p style="margin-top:6px;">${getUnitsInfo(p)}</p>
+        ${(currentUser && p.ownerId === currentUser.uid && (p.unitsTotal || 1) > 1) ? `
+            <div style="background:#F7F8FA;border-radius:8px;padding:12px;margin-top:8px;display:flex;align-items:center;gap:12px;">
+                <span>Units available:</span>
+                <button class="btn btn-outline" onclick="adjustUnits(-1)" style="padding:2px 12px;">−</button>
+                <span id="unitsAvailableDisplay" style="font-weight:700;">${(typeof p.unitsAvailable === 'number') ? p.unitsAvailable : (p.unitsTotal || 1)}</span>
+                <button class="btn btn-outline" onclick="adjustUnits(1)" style="padding:2px 12px;">+</button>
+                <span style="color:#999;font-size:13px;">out of ${p.unitsTotal || 1}</span>
+            </div>
+        ` : ''}
 
         <div id="detailMap"></div>
         <div class="action-row">
@@ -225,6 +235,28 @@ async function loadReviews() {
         list.innerHTML = '<p style="color:#c62828;">Could not load reviews.</p>';
     }
 }
+
+// Lets the owner update how many units are currently available without
+// going through the full edit form (which resets the "Not yet verified"
+// badge) — this is just a quick occupancy count change, nothing about
+// the listing itself changed.
+async function adjustUnits(delta) {
+    if (!propertyData || !currentUser || propertyData.ownerId !== currentUser.uid) return;
+    const total = propertyData.unitsTotal || 1;
+    const current = (typeof propertyData.unitsAvailable === 'number') ? propertyData.unitsAvailable : total;
+    const next = Math.max(0, Math.min(total, current + delta));
+    if (next === current) return;
+
+    try {
+        await db.collection('properties').doc(propertyId).update({ unitsAvailable: next });
+        propertyData.unitsAvailable = next;
+        document.getElementById('unitsAvailableDisplay').textContent = next;
+    } catch (error) {
+        console.error('Error updating units available:', error);
+        alert('Could not update: ' + error.message);
+    }
+}
+window.adjustUnits = adjustUnits;
 
 async function applyToProperty() {
     if (!currentUser) {

@@ -98,6 +98,7 @@ function renderPage() {
                     <p class="location">📍 ${p.area ? escapeHtml(p.area) + ', ' : ''}${escapeHtml(p.city || '')}</p>
                     <p class="price">₦${(p.price || 0).toLocaleString()}/year</p>
                     <p class="rating">${starString(rating)} ${rating.toFixed(1)}</p>
+                    ${getUnitsInfo(p)}
                     ${getListingBadge(p)}
                 </div>
             </a>
