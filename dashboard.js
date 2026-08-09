@@ -15,7 +15,39 @@ auth.onAuthStateChanged(async (user) => {
     setupDashboard();
     loadListings();
     loadAnnouncement();
+    if (currentUserData?.role === 'tenant') loadTenancyCard();
 });
+
+// Shows the tenant's active lease with a countdown, if they have one —
+// created automatically when a landlord/agent confirms their move-in.
+async function loadTenancyCard() {
+    const card = document.getElementById('tenancyCard');
+    if (!card) return;
+    try {
+        const snapshot = await db.collection('tenancies')
+            .where('tenantId', '==', currentUser.uid)
+            .where('status', '==', 'active')
+            .get();
+
+        if (snapshot.empty) return;
+
+        const html = snapshot.docs.map(doc => {
+            const t = doc.data();
+            const end = t.endDate.toDate();
+            const daysLeft = Math.max(0, Math.ceil((end - new Date()) / (1000 * 60 * 60 * 24)));
+            return `
+                <div style="background:linear-gradient(135deg,#0F2C59,#0A1D3D);color:#fff;border-radius:12px;padding:18px;margin-bottom:14px;">
+                    <p style="font-weight:600;">🏠 ${escapeHtml(t.propertyTitle || 'Your rental')}</p>
+                    <p style="font-size:28px;font-family:'Fraunces',serif;font-weight:700;color:#E8C547;">${daysLeft} days left</p>
+                    <p style="font-size:13px;opacity:0.85;">Lease ends ${end.toLocaleDateString()} (${t.leaseMonths}-month term)</p>
+                </div>
+            `;
+        }).join('');
+        card.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading tenancy:', error);
+    }
+}
 
 // Shows the newest active announcement (posted by you via Firebase Console).
 // A user who dismisses it won't see the SAME announcement again on this device.
@@ -177,7 +209,7 @@ async function loadListings() {
                         <div class="info">
                             <h3>${escapeHtml(property.title || 'Property')}</h3>
                             <p class="location">📍 ${property.area ? escapeHtml(property.area) + ', ' : ''}${escapeHtml(property.city || '')}</p>
-                            ${property.price ? `<p class="price">₦${property.price.toLocaleString()}/year</p>` : ''}
+                            ${property.price ? getPriceSummaryHtml(property) : ''}
                             <p class="rating">${starString(rating)} ${rating.toFixed(1)}</p>
                             ${role !== 'tenant' ? getUnitsInfo(property) : ''}
                         </div>

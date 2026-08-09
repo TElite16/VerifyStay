@@ -56,7 +56,26 @@ function renderProperty() {
 
     card.innerHTML = `
         <h1>${escapeHtml(p.title || 'Property')}</h1>
-        <p class="price">₦${(p.price || 0).toLocaleString()}/year</p>
+        <div class="price-breakdown" style="background:#F7F8FA;border-radius:8px;padding:14px;margin:8px 0;">
+            ${(() => {
+                const b = getPriceBreakdown(p);
+                return `
+                    <div style="display:flex;justify-content:space-between;padding:4px 0;">
+                        <span>House Rent</span><strong>₦${b.rent.toLocaleString()}/year</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:4px 0;color:#666;font-size:14px;">
+                        <span>Maintenance Fee (10%)</span><span>₦${b.maintenanceFee.toLocaleString()}</span>
+                    </div>
+                    ${b.isAgentListing ? `
+                    <div style="display:flex;justify-content:space-between;padding:4px 0;color:#666;font-size:14px;">
+                        <span>Management Fee (10% agency + 10% legal)</span><span>₦${b.managementFee.toLocaleString()}</span>
+                    </div>` : ''}
+                    <div style="display:flex;justify-content:space-between;padding:8px 0 0;margin-top:4px;border-top:1px solid #ddd;font-weight:700;">
+                        <span>Total (first year)</span><span>₦${b.total.toLocaleString()}</span>
+                    </div>
+                `;
+            })()}
+        </div>
         <p class="location">📍 ${p.area ? escapeHtml(p.area) + ', ' : ''}${escapeHtml(p.city || '')}</p>
         <p style="color:#667;font-size:14px;margin-bottom:8px;">${escapeHtml(p.address || '')}</p>
         ${getListingBadge(p)}
@@ -73,6 +92,7 @@ function renderProperty() {
                 <span style="color:#999;font-size:13px;">out of ${p.unitsTotal || 1}</span>
             </div>
         ` : ''}
+        ${(currentUser && p.ownerId === currentUser.uid) ? `<div id="applicantsSection" style="margin-top:14px;"></div>` : ''}
 
         <div id="detailMap"></div>
         <div class="action-row">
@@ -103,6 +123,7 @@ function renderProperty() {
 
     if (currentUserRole === 'tenant') { attachStarInput(); loadExistingReview(); }
     loadListedBySection(p);
+    if (currentUser && p.ownerId === currentUser.uid) loadApplicants(p);
 }
 
 // If this tenant already reviewed this property, prefill the form with
@@ -236,7 +257,101 @@ async function loadReviews() {
     }
 }
 
-// Lets the owner update how many units are currently available without
+// Shows everyone who applied to this property, with a "Confirm Payment
+// & Move In" action for the owner. This is the actual trigger for
+// automatic availability adjustment — not the manual +/- stepper, which
+// is just there for corrections.
+async function loadApplicants(p) {
+    const section = document.getElementById('applicantsSection');
+    if (!section) return;
+    try {
+        const snapshot = await db.collection('applications')
+            .where('propertyId', '==', propertyId)
+            .get();
+
+        if (snapshot.empty) {
+            section.innerHTML = `<p style="color:#999;font-size:14px;">No applicants yet.</p>`;
+            return;
+        }
+
+        const available = (typeof p.unitsAvailable === 'number') ? p.unitsAvailable : (p.unitsTotal || 1);
+
+        const rows = await Promise.all(snapshot.docs.map(async doc => {
+            const a = doc.data();
+            let tenantName = 'Tenant';
+            try {
+                const tDoc = await db.collection('users').doc(a.tenantId).get();
+                if (tDoc.exists) tenantName = tDoc.data().name;
+            } catch (e) {}
+
+            if (a.status === 'occupied') {
+                return `<div class="review-item">✅ <a href="profile.html?id=${a.tenantId}">${escapeHtml(tenantName)}</a> — moved in</div>`;
+            }
+            return `
+                <div class="review-item" style="display:flex;justify-content:space-between;align-items:center;">
+                    <a href="profile.html?id=${a.tenantId}">${escapeHtml(tenantName)}</a>
+                    ${available > 0
+                        ? `<button class="btn btn-primary" style="padding:4px 10px;font-size:13px;" onclick="markOccupied('${doc.id}','${a.tenantId}','${escapeHtml(tenantName)}')">Confirm Payment &amp; Move In</button>`
+                        : `<span style="color:#999;font-size:12px;">No units left</span>`}
+                </div>
+            `;
+        }));
+
+        section.innerHTML = `<h3 style="font-size:16px;font-family:'Fraunces',serif;">Applicants</h3>${rows.join('')}`;
+    } catch (error) {
+        console.error('Error loading applicants:', error);
+        section.innerHTML = `<p style="color:#c62828;font-size:14px;">Could not load applicants.</p>`;
+    }
+}
+
+// Confirms a tenant has paid and moved in (confirmed manually — outside
+// the app, e.g. bank transfer — same trust model as everything else
+// here). Creates a tenancy record for the lease countdown, marks their
+// application occupied, and automatically decrements unitsAvailable.
+async function markOccupied(applicationId, tenantId, tenantName) {
+    const months = prompt(`Confirm: has ${tenantName} paid and is moving in?\n\nEnter lease length in months (e.g. 12 for a year, 6 for half a year):`, '12');
+    if (!months) return;
+    const leaseMonths = parseInt(months);
+    if (!leaseMonths || leaseMonths <= 0) {
+        alert('Please enter a valid number of months.');
+        return;
+    }
+
+    try {
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + leaseMonths);
+
+        await db.collection('tenancies').add({
+            propertyId: propertyId,
+            propertyTitle: propertyData.title,
+            tenantId: tenantId,
+            ownerId: currentUser.uid,
+            leaseMonths: leaseMonths,
+            startDate: firebase.firestore.Timestamp.fromDate(startDate),
+            endDate: firebase.firestore.Timestamp.fromDate(endDate),
+            status: 'active',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await db.collection('applications').doc(applicationId).update({ status: 'occupied' });
+
+        await db.collection('properties').doc(propertyId).update({
+            unitsAvailable: firebase.firestore.FieldValue.increment(-1)
+        });
+
+        await createNotification(tenantId, 'tenancy', `You're confirmed as moved in at "${propertyData.title}" — lease runs ${leaseMonths} months.`, `dashboard.html`);
+
+        alert('Confirmed! Availability updated automatically.');
+        window.location.reload();
+    } catch (error) {
+        console.error('Error confirming occupancy:', error);
+        alert('Could not confirm: ' + error.message);
+    }
+}
+window.markOccupied = markOccupied;
+
+
 // going through the full edit form (which resets the "Not yet verified"
 // badge) — this is just a quick occupancy count change, nothing about
 // the listing itself changed.

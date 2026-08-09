@@ -45,6 +45,7 @@ auth.onAuthStateChanged(async (user) => {
     }
 
     initMap();
+    setupFeePreview();
     setupFileUploads();
     setupFormSubmit(user.uid);
 
@@ -80,9 +81,13 @@ async function loadPropertyForEdit(propertyId, userId) {
         document.getElementById('area').value = p.area || '';
         document.getElementById('address').value = p.address || '';
         document.getElementById('price').value = p.price || '';
+        document.getElementById('price').dispatchEvent(new Event('input'));
         document.getElementById('bedrooms').value = p.bedrooms || '';
         document.getElementById('unitsTotal').value = p.unitsTotal || 1;
-        existingUnitsAvailable = (typeof p.unitsAvailable === 'number') ? p.unitsAvailable : (p.unitsTotal || 1);
+        // If this property never had units data before (posted before this
+        // feature existed), treat this edit as a fresh start — don't fall
+        // back to 1, since that's not "1 available", it's "never set".
+        existingUnitsAvailable = (typeof p.unitsAvailable === 'number') ? p.unitsAvailable : null;
         document.getElementById('description').value = p.description || '';
 
         if (currentRole === 'agent') {
@@ -294,6 +299,30 @@ function setupFileUploads() {
 
 // Uploads one file to Cloudinary (free, no card) using an unsigned upload
 // preset, and returns its public URL. See cloudinary-config.js for setup.
+// Live preview of Maintenance Fee (always 10%) and, for agents, Management
+// Fee (10% agency + 10% legal = 20%) as they type the rent — so they see
+// the full picture before posting, matching what Market will show.
+function setupFeePreview() {
+    const priceInput = document.getElementById('price');
+    const preview = document.getElementById('feePreview');
+    if (!priceInput || !preview) return;
+
+    priceInput.addEventListener('input', function () {
+        const rent = parseFloat(this.value) || 0;
+        if (rent <= 0) { preview.innerHTML = ''; return; }
+
+        const maintenanceFee = Math.round(rent * 0.10);
+        const managementFee = currentRole === 'agent' ? Math.round(rent * 0.20) : 0;
+        const total = rent + maintenanceFee + managementFee;
+
+        preview.innerHTML = `
+            Maintenance Fee (10%): ₦${maintenanceFee.toLocaleString()}
+            ${currentRole === 'agent' ? `<br>Management Fee (10% agency + 10% legal): ₦${managementFee.toLocaleString()}` : ''}
+            <br><strong>Total shown to tenants: ₦${total.toLocaleString()}/year</strong>
+        `;
+    });
+}
+
 // uploadFile() now lives in app.js (shared with login.js/profile.js)
 
 function setupFormSubmit(userId) {
