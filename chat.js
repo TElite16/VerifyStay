@@ -33,6 +33,22 @@ function chatIdFor(uidA, uidB) {
     return [uidA, uidB].sort().join('_');
 }
 
+// Shows just the time for messages sent today, "Yesterday HH:MM" for
+// yesterday, and a short date for anything older — same pattern most
+// chat apps use so timestamps stay readable without cluttering the bubble.
+function formatMessageTime(date) {
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (isToday) return timeStr;
+    if (isYesterday) return `Yesterday ${timeStr}`;
+    return `${date.toLocaleDateString([], { day: 'numeric', month: 'short' })} ${timeStr}`;
+}
+
 // ---------------------------------------------------------------
 // INBOX — list of conversations, most recent first
 // ---------------------------------------------------------------
@@ -167,7 +183,13 @@ function listenForMessages() {
             messagesDiv.innerHTML = snapshot.docs.map(doc => {
                 const m = doc.data();
                 const mine = m.senderId === currentUser.uid;
-                return `<div class="msg-bubble ${mine ? 'msg-mine' : 'msg-theirs'}">${escapeHtml(m.text)}</div>`;
+                const when = m.createdAt ? formatMessageTime(m.createdAt.toDate()) : 'Sending...';
+                return `
+                    <div class="msg-bubble ${mine ? 'msg-mine' : 'msg-theirs'}">
+                        <div>${escapeHtml(m.text)}</div>
+                        <div class="msg-time">${when}</div>
+                    </div>
+                `;
             }).join('');
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }, error => {
