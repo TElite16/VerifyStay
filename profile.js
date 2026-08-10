@@ -99,6 +99,11 @@ async function renderOwnProfile() {
                 <input type="text" id="editPhone" value="${escapeHtml(data.phone || '')}" disabled>
                 <small style="color:#666;">Confirmed manually by phone call during account review — contact support to change it.</small>
             </div>
+            <div class="form-group">
+                <label>E-Signature</label>
+                <input type="text" id="editSignature" value="${escapeHtml(data.signatureName || '')}" placeholder="Type your full legal name">
+                <small style="color:#666;">Used to sign agreements in the app (caretaker contracts, tenancy agreements). Typing your name here counts as your signature when you accept an agreement.</small>
+            </div>
             <button class="btn btn-primary" style="margin-top:16px;" onclick="saveProfile()">Save Changes</button>
             <div id="successMessage" class="success-message">✅ Profile updated.</div>
 
@@ -140,9 +145,10 @@ async function handlePfpChange(e) {
 async function saveProfile() {
     const name = document.getElementById('editName').value.trim();
     const gender = document.getElementById('editGender').value;
+    const signatureName = document.getElementById('editSignature').value.trim();
     if (!name) { alert('Name cannot be empty.'); return; }
     try {
-        await db.collection('users').doc(currentUser.uid).update({ name: name, gender: gender });
+        await db.collection('users').doc(currentUser.uid).update({ name: name, gender: gender, signatureName: signatureName });
         document.getElementById('successMessage').style.display = 'block';
     } catch (error) {
         console.error('Error saving profile:', error);
