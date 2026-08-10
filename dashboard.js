@@ -16,7 +16,61 @@ auth.onAuthStateChanged(async (user) => {
     loadListings();
     loadAnnouncement();
     if (currentUserData?.role === 'tenant') loadTenancyCard();
+    if (currentUserData?.role === 'agent') loadDebtsCard();
 });
+
+// Shows an agent any Caretaker Debts owed TO them from properties they
+// previously stepped down from — and lets them mark one as paid once
+// the landlord has actually settled up (confirmed manually, same trust
+// model as the rest of the app).
+async function loadDebtsCard() {
+    const card = document.getElementById('debtsCard');
+    if (!card) return;
+    try {
+        const snapshot = await db.collection('caretakerDebts')
+            .where('formerAgentId', '==', currentUser.uid)
+            .get();
+
+        if (snapshot.empty) return;
+
+        const rows = snapshot.docs.map(doc => {
+            const d = doc.data();
+            const paid = d.status === 'paid';
+            return `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;">
+                    <div>
+                        <strong>${escapeHtml(d.propertyTitle || 'Property')}</strong><br>
+                        <span style="font-size:13px;color:#666;">${d.monthsWorked} months × ${d.commissionPercent}% — ₦${(d.owedAmount || 0).toLocaleString()} ${d.landlordName ? `owed by ${escapeHtml(d.landlordName)}` : ''}</span>
+                    </div>
+                    ${paid
+                        ? `<span style="color:#2e7d32;font-size:13px;">✅ Paid</span>`
+                        : `<button class="btn btn-outline" style="padding:4px 10px;font-size:13px;" onclick="markDebtPaid('${doc.id}')">Mark as Paid</button>`}
+                </div>
+            `;
+        }).join('');
+
+        card.innerHTML = `
+            <div style="background:#fff;border-radius:10px;padding:16px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,0.06);">
+                <h3 style="font-family:'Fraunces',serif;font-size:16px;margin-bottom:8px;">💰 Caretaker Wages Owed to You</h3>
+                ${rows}
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error loading debts:', error);
+    }
+}
+
+async function markDebtPaid(debtId) {
+    if (!confirm('Confirm you actually received this payment from the landlord?')) return;
+    try {
+        await db.collection('caretakerDebts').doc(debtId).update({ status: 'paid' });
+        loadDebtsCard();
+    } catch (error) {
+        console.error('Error marking debt paid:', error);
+        alert('Could not update: ' + error.message);
+    }
+}
+window.markDebtPaid = markDebtPaid;
 
 // Shows the tenant's active lease with a countdown, if they have one —
 // created automatically when a landlord/agent confirms their move-in.

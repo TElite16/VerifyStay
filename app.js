@@ -280,15 +280,30 @@ window.getUnitsInfo = getUnitsInfo;
 // The one place the rent breakdown formula lives, so it's identical
 // everywhere it's shown (Market, Dashboard, property page):
 //   - House Rent: whatever the landlord/agent set
-//   - Maintenance Fee: always 10% of rent
-//   - Management Fee: agent listings only — 10% agency + 10% legal = 20% of rent
-function getPriceBreakdown(p) {
+//   - Service/Repair Fee: 10% of rent normally, drops to 5% next renewal
+//     for a tenant who logged 0-1 repair requests all year (loyalty
+//     discount — computed per-tenancy, not shown on general listings)
+//   - Commission: agent listings only — whatever % the agent chose to
+//     charge (was a fixed 20%, now agent-set; capped by state to
+//     qualify for the Caretaker Role, see getCommissionCap)
+function getPriceBreakdown(p, serviceFeePercent) {
     const rent = p.price || 0;
-    const maintenanceFee = Math.round(rent * 0.10);
+    const feePercent = (typeof serviceFeePercent === 'number') ? serviceFeePercent : 10;
+    const serviceFee = Math.round(rent * (feePercent / 100));
+
+    // Commission applies either when an agent posted the listing directly,
+    // OR when a landlord's listing has an accepted Caretaker Agreement
+    // assigning an agent to manage it.
     const isAgentListing = p.ownerRole === 'agent';
-    const managementFee = isAgentListing ? Math.round(rent * 0.20) : 0;
-    const total = rent + maintenanceFee + managementFee;
-    return { rent, maintenanceFee, managementFee, total, isAgentListing };
+    const hasCaretaker = p.ownerRole === 'landlord' && p.caretakerRoleActive;
+    const commissionPercent = isAgentListing
+        ? (typeof p.commissionPercent === 'number' ? p.commissionPercent : 10)
+        : hasCaretaker
+            ? (typeof p.caretakerCommissionPercent === 'number' ? p.caretakerCommissionPercent : 10)
+            : 0;
+    const commissionFee = (isAgentListing || hasCaretaker) ? Math.round(rent * (commissionPercent / 100)) : 0;
+    const total = rent + serviceFee + commissionFee;
+    return { rent, serviceFee, serviceFeePercent: feePercent, commissionFee, commissionPercent, total, isAgentListing: isAgentListing || hasCaretaker };
 }
 window.getPriceBreakdown = getPriceBreakdown;
 
@@ -303,6 +318,24 @@ function getPriceSummaryHtml(p) {
     `;
 }
 window.getPriceSummaryHtml = getPriceSummaryHtml;
+
+// Looks up the Caretaker Role commission cap for a given state. Only
+// states you've verified and added via Firebase Console will have a
+// real entry — everything else falls back to the platform default (10%,
+// matching Lagos's confirmed LASRERA cap) until you confirm otherwise.
+async function getCommissionCap(state) {
+    if (!state) return 10;
+    try {
+        const doc = await db.collection('stateCommissionCaps').doc(state).get();
+        if (doc.exists && typeof doc.data().capPercent === 'number') {
+            return doc.data().capPercent;
+        }
+    } catch (e) {
+        console.warn('Could not load commission cap, using default:', e);
+    }
+    return 10;
+}
+window.getCommissionCap = getCommissionCap;
 
 // ---------------------------------------------------------------
 // CHAT + NOTIFICATIONS (Fiverr-style: applying to a property or tapping

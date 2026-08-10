@@ -78,6 +78,13 @@
                     <option value="duplex">Duplex</option>
                     <option value="bungalow">Bungalow</option>
                     <option value="studio">Studio</option>
+                    <option value="shop">Shop</option>
+                    <option value="warehouse">Warehouse</option>
+                    <option value="hall">Hall</option>
+                    <option value="field">Field</option>
+                    <option value="farmland-plot">Plot of Farmland</option>
+                    <option value="farmland-acre">Acre of Farmland</option>
+                    <option value="farmland-hectare">Hectare of Farmland</option>
                 </select>
             </div>
 
@@ -144,26 +151,9 @@
                 <div id="feePreview" style="font-size:13px;color:#666;margin-top:6px;"></div>
             </div>
 
-            <div class="form-group" style="background:#F7F8FA;border-radius:8px;padding:14px;">
-                <p style="font-weight:600;margin-bottom:8px;">Pricing Breakdown (shown to tenants)</p>
-                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                    <span>House Rent</span><span id="breakdownRent">₦0</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                    <span>Maintenance Fee (10% of rent)</span><span id="breakdownMaintenance">₦0</span>
-                </div>
-                <div id="managementFeeRow" style="display:none;justify-content:space-between;margin-bottom:4px;">
-                    <span>Management Fee (10% agency + 10% legal)</span><span id="breakdownManagement">₦0</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid #ddd;padding-top:6px;margin-top:4px;">
-                    <span>Total Annual Cost</span><span id="breakdownTotal">₦0</span>
-                </div>
-                <div class="help-text">Maintenance fee is automatic (10% of rent) for everyone. Agents also add a management fee (10% agency + 10% legal), same as standard Nigerian agency practice — this is the actual amount the tenant pays, not just the rent.</div>
-            </div>
-
             <div class="form-group">
-                <label>Bedrooms</label>
-                <input type="number" id="bedrooms" placeholder="e.g., 3" min="1">
+                <label>Rooms/Space</label>
+                <input type="number" id="bedrooms" placeholder="e.g., 3 (bedrooms, or units of space for non-residential)" min="1">
             </div>
 
             <div class="form-group">
@@ -182,6 +172,23 @@
                 <input type="text" id="landlordName" placeholder="Landlord's full name" style="margin-bottom: 10px;">
                 <input type="tel" id="landlordPhone" placeholder="Landlord's phone number">
                 <div class="help-text">Since you're listing as an agent, enter the landlord's details so the property can be linked to them. They can claim this listing later by verifying their phone number on VerifyStay.</div>
+            </div>
+
+            <div class="form-group" id="commissionFieldsGroup" style="display:none;">
+                <label>Your Commission (%)</label>
+                <input type="number" id="commissionPercent" placeholder="e.g., 10" min="1" max="100" value="10">
+                <div id="commissionCapNote" style="font-size:13px;color:#666;margin-top:4px;"></div>
+
+                <div style="background:#F7F8FA;border-radius:8px;padding:14px;margin-top:10px;">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                        <input type="checkbox" id="caretakerRoleToggle" style="width:auto;">
+                        <span><strong>🏠 Activate Caretaker Role</strong></span>
+                    </label>
+                    <div style="font-size:13px;color:#666;margin-top:6px;">
+                        Get paid a recurring wage for as long as you manage this property, even across renewals. If the landlord ever removes you, you're still owed your earned share for the months you served — paid from the property's next rent payment. <strong>Only available if your commission is at or below the cap for this property's state.</strong>
+                    </div>
+                    <div id="caretakerBlockedNote" style="display:none;color:#c62828;font-size:13px;margin-top:6px;font-weight:600;"></div>
+                </div>
             </div>
 
             <div class="form-group">

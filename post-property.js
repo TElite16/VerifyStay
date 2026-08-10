@@ -16,6 +16,8 @@ let existingPhotoUrls = [];
 let existingCoverIndex = 0;
 let existingDocUrl = null;
 let existingUnitsAvailable = null;
+let existingCaretakerActive = false;
+let existingCaretakerStartDate = null;
 
 auth.onAuthStateChanged(async (user) => {
     if (!user) {
@@ -38,6 +40,8 @@ auth.onAuthStateChanged(async (user) => {
             if (currentRole === 'agent') {
                 const group = document.getElementById('landlordFieldsGroup');
                 if (group) group.style.display = 'block';
+                const commGroup = document.getElementById('commissionFieldsGroup');
+                if (commGroup) commGroup.style.display = 'block';
             }
         }
     } catch (error) {
@@ -46,6 +50,7 @@ auth.onAuthStateChanged(async (user) => {
 
     initMap();
     setupFeePreview();
+    setupCommissionCapCheck();
     setupFileUploads();
     setupFormSubmit(user.uid);
 
@@ -93,6 +98,12 @@ async function loadPropertyForEdit(propertyId, userId) {
         if (currentRole === 'agent') {
             document.getElementById('landlordName').value = p.landlordName || '';
             document.getElementById('landlordPhone').value = p.landlordPhone || '';
+            document.getElementById('commissionPercent').value = (typeof p.commissionPercent === 'number') ? p.commissionPercent : 10;
+            existingCaretakerActive = !!p.caretakerRoleActive;
+            existingCaretakerStartDate = p.caretakerStartDate || null;
+            document.getElementById('caretakerRoleToggle').checked = existingCaretakerActive;
+            await refreshCommissionCap();
+            await checkOutstandingDebt();
         }
 
         if (p.latitude && p.longitude) {
@@ -299,28 +310,104 @@ function setupFileUploads() {
 
 // Uploads one file to Cloudinary (free, no card) using an unsigned upload
 // preset, and returns its public URL. See cloudinary-config.js for setup.
-// Live preview of Maintenance Fee (always 10%) and, for agents, Management
-// Fee (10% agency + 10% legal = 20%) as they type the rent — so they see
-// the full picture before posting, matching what Market will show.
+// Checks the agent's chosen commission against the state's Caretaker
+// Role cap (looked up live from Firestore) — above the cap, the toggle
+// gets forced off and locked, with a clear reason shown.
+let currentCommissionCap = 10;
+
+async function refreshCommissionCap() {
+    const state = document.getElementById('city').value;
+    const note = document.getElementById('commissionCapNote');
+    currentCommissionCap = await getCommissionCap(state);
+    if (note) {
+        note.textContent = state
+            ? `Caretaker Role cap for ${state}: ${currentCommissionCap}%${currentCommissionCap === 10 ? ' (platform default — not yet confirmed as a specific state regulation)' : ''}`
+            : 'Select a state above to see the Caretaker Role commission cap.';
+    }
+    validateCaretakerEligibility();
+}
+
+let hasOutstandingDebt = false;
+
+async function checkOutstandingDebt() {
+    if (!editPropertyId) return; // only relevant when editing an existing property
+    try {
+        const snapshot = await db.collection('caretakerDebts')
+            .where('propertyId', '==', editPropertyId)
+            .where('status', '==', 'outstanding')
+            .get();
+        hasOutstandingDebt = !snapshot.empty;
+        if (hasOutstandingDebt) {
+            let total = 0;
+            snapshot.forEach(d => total += (d.data().owedAmount || 0));
+            const note = document.getElementById('caretakerBlockedNote');
+            const toggle = document.getElementById('caretakerRoleToggle');
+            if (toggle) { toggle.checked = false; toggle.disabled = true; }
+            if (note) {
+                note.style.display = 'block';
+                note.textContent = `⚠️ This property has an outstanding caretaker debt of ₦${total.toLocaleString()} from a previous caretaker — settle it (see Dashboard) before Caretaker Role can be activated again.`;
+            }
+        }
+    } catch (e) {
+        console.warn('Could not check outstanding debts:', e);
+    }
+}
+
+function validateCaretakerEligibility() {
+    const commissionInput = document.getElementById('commissionPercent');
+    const toggle = document.getElementById('caretakerRoleToggle');
+    const blockedNote = document.getElementById('caretakerBlockedNote');
+    if (!commissionInput || !toggle) return;
+    if (hasOutstandingDebt) { toggle.checked = false; toggle.disabled = true; return; }
+
+    const commission = parseFloat(commissionInput.value) || 0;
+    const overCap = commission > currentCommissionCap;
+
+    toggle.disabled = overCap;
+    if (overCap) {
+        toggle.checked = false;
+        blockedNote.style.display = 'block';
+        blockedNote.textContent = `Your commission (${commission}%) is above the ${currentCommissionCap}% cap — you can still list and manage this property, but won't get the guaranteed recurring Caretaker wage or termination payout protection. Lower your commission to ${currentCommissionCap}% or below to unlock it.`;
+    } else {
+        blockedNote.style.display = 'none';
+    }
+}
+
+function setupCommissionCapCheck() {
+    const cityInput = document.getElementById('city');
+    const commissionInput = document.getElementById('commissionPercent');
+    if (cityInput) cityInput.addEventListener('change', refreshCommissionCap);
+    if (commissionInput) commissionInput.addEventListener('input', validateCaretakerEligibility);
+}
+
+// Live preview of Service/Repair Fee (10%) and, for agents, their own
+// chosen Commission % — so they see the full picture before posting,
+// matching what Market will show.
 function setupFeePreview() {
     const priceInput = document.getElementById('price');
     const preview = document.getElementById('feePreview');
     if (!priceInput || !preview) return;
 
-    priceInput.addEventListener('input', function () {
-        const rent = parseFloat(this.value) || 0;
+    function updatePreview() {
+        const rent = parseFloat(priceInput.value) || 0;
         if (rent <= 0) { preview.innerHTML = ''; return; }
 
-        const maintenanceFee = Math.round(rent * 0.10);
-        const managementFee = currentRole === 'agent' ? Math.round(rent * 0.20) : 0;
-        const total = rent + maintenanceFee + managementFee;
+        const serviceFee = Math.round(rent * 0.10);
+        const commissionInput = document.getElementById('commissionPercent');
+        const commissionPercent = (currentRole === 'agent' && commissionInput) ? (parseFloat(commissionInput.value) || 0) : 0;
+        const commissionFee = Math.round(rent * (commissionPercent / 100));
+        const total = rent + serviceFee + commissionFee;
 
         preview.innerHTML = `
-            Maintenance Fee (10%): ₦${maintenanceFee.toLocaleString()}
-            ${currentRole === 'agent' ? `<br>Management Fee (10% agency + 10% legal): ₦${managementFee.toLocaleString()}` : ''}
+            Service/Repair Fee (10%): ₦${serviceFee.toLocaleString()}
+            ${currentRole === 'agent' ? `<br>Your Commission (${commissionPercent}%): ₦${commissionFee.toLocaleString()}` : ''}
             <br><strong>Total shown to tenants: ₦${total.toLocaleString()}/year</strong>
         `;
-    });
+    }
+
+    priceInput.addEventListener('input', updatePreview);
+    const commissionInput = document.getElementById('commissionPercent');
+    if (commissionInput) commissionInput.addEventListener('input', updatePreview);
 }
 
 // uploadFile() now lives in app.js (shared with login.js/profile.js)
@@ -429,6 +516,59 @@ function setupFormSubmit(userId) {
                 if (currentRole === 'agent') {
                     updateData.landlordName = document.getElementById('landlordName').value.trim() || null;
                     updateData.landlordPhone = document.getElementById('landlordPhone').value.trim() || null;
+                    updateData.commissionPercent = parseFloat(document.getElementById('commissionPercent').value) || 10;
+                    const nowCaretakerActive = document.getElementById('caretakerRoleToggle').checked;
+                    updateData.caretakerRoleActive = nowCaretakerActive;
+                    // Keep the ORIGINAL start date if the role was already active —
+                    // only set a fresh start date the first time it's turned on,
+                    // so pro-rata termination math stays accurate.
+                    if (nowCaretakerActive && existingCaretakerActive) {
+                        updateData.caretakerStartDate = existingCaretakerStartDate;
+                    } else if (nowCaretakerActive && !existingCaretakerActive) {
+                        updateData.caretakerStartDate = firebase.firestore.FieldValue.serverTimestamp();
+                    } else {
+                        updateData.caretakerStartDate = null;
+                        // Stepping DOWN from an active Caretaker Role — record what's
+                        // owed for the months already served.
+                        // NOTE: landlords don't yet have their own linked accounts on
+                        // agent-listed properties (that "claim" feature isn't built
+                        // yet), so this records the obligation for tracking rather
+                        // than enforcing it against a specific landlord login.
+                        if (existingCaretakerActive && existingCaretakerStartDate) {
+                            const startMs = existingCaretakerStartDate.toMillis
+                                ? existingCaretakerStartDate.toMillis()
+                                : new Date(existingCaretakerStartDate).getTime();
+                            const monthsWorked = Math.max(0, Math.floor((Date.now() - startMs) / (1000 * 60 * 60 * 24 * 30)));
+                            const currentRent = parseFloat(price) || 0;
+                            // This is a rough ESTIMATE using today's rent — the real,
+                            // final amount gets calculated when the next actual rent
+                            // payment is recorded (see recordRentRenewal in
+                            // property-details.js), same as how it works in practice.
+                            const estimatedOwed = Math.round((monthsWorked / 12) * (updateData.commissionPercent / 100) * currentRent);
+                            if (monthsWorked > 0) {
+                                let formerAgentName = 'Agent';
+                                try {
+                                    const meDoc = await db.collection('users').doc(userId).get();
+                                    if (meDoc.exists) formerAgentName = meDoc.data().name;
+                                } catch (e) {}
+
+                                db.collection('caretakerDebts').add({
+                                    propertyId: editPropertyId,
+                                    propertyTitle: title,
+                                    formerAgentId: userId,
+                                    formerAgentName: formerAgentName,
+                                    landlordId: null,
+                                    landlordName: document.getElementById('landlordName').value.trim() || null,
+                                    monthsWorked: monthsWorked,
+                                    commissionPercent: updateData.commissionPercent,
+                                    owedAmount: estimatedOwed,
+                                    status: 'outstanding',
+                                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                                }).catch(e => console.warn('Could not record caretaker debt:', e));
+                                alert(`Stepping down recorded: ${monthsWorked} months served at ${updateData.commissionPercent}%. Estimated: ₦${estimatedOwed.toLocaleString()} — final amount will be calculated when the property's next rent payment is recorded.`);
+                            }
+                        }
+                    }
                 }
                 await db.collection('properties').doc(editPropertyId).update(updateData);
                 docRef = { id: editPropertyId };
@@ -452,6 +592,9 @@ function setupFormSubmit(userId) {
                     ownerRole: ownerRole,
                     unitsTotal: Math.max(1, parseInt(document.getElementById('unitsTotal').value) || 1),
                     unitsAvailable: Math.max(1, parseInt(document.getElementById('unitsTotal').value) || 1), // all units start available
+                    commissionPercent: ownerRole === 'agent' ? (parseFloat(document.getElementById('commissionPercent').value) || 10) : 0,
+                    caretakerRoleActive: ownerRole === 'agent' ? document.getElementById('caretakerRoleToggle').checked : false,
+                    caretakerStartDate: (ownerRole === 'agent' && document.getElementById('caretakerRoleToggle').checked) ? firebase.firestore.FieldValue.serverTimestamp() : null,
                     status: 'active',   // goes live immediately — no more admin approval gate
                     verified: false,     // optional extra badge an admin can still grant after reviewing the utility bill
                     verificationWindowStart: firebase.firestore.FieldValue.serverTimestamp(), // drives the 4-hour "Not yet verified" badge
