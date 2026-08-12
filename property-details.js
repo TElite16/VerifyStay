@@ -83,7 +83,7 @@ function renderProperty() {
                 `;
             })()}
         </div>
-        <p class="location">📍 ${p.area ? escapeHtml(p.area) + ', ' : ''}${escapeHtml(p.city || '')}</p>
+        <p class="location">📍 ${p.area ? escapeHtml(p.area) + ', ' : ''}${p.lga ? escapeHtml(p.lga) + ' LGA, ' : ''}${escapeHtml(p.city || '')}</p>
         <p style="color:#667;font-size:14px;margin-bottom:8px;">${escapeHtml(p.address || '')}</p>
         ${(currentUser && currentUserRole === 'tenant') ? `<p><span class="flag-link" style="color:#0F2C59;" onclick="requestRepair()">🔧 Request a Repair</span></p>` : ''}
         ${getListingBadge(p)}

@@ -51,6 +51,7 @@ auth.onAuthStateChanged(async (user) => {
     initMap();
     setupFeePreview();
     setupCommissionCapCheck();
+    setupLgaFilter();
     setupFileUploads();
     setupFormSubmit(user.uid);
 
@@ -83,6 +84,7 @@ async function loadPropertyForEdit(propertyId, userId) {
         document.getElementById('title').value = p.title || '';
         document.getElementById('propertyType').value = p.propertyType || '';
         document.getElementById('city').value = p.city || '';
+        populateLgaOptions(p.lga || '');
         document.getElementById('area').value = p.area || '';
         document.getElementById('address').value = p.address || '';
         document.getElementById('price').value = p.price || '';
@@ -380,6 +382,31 @@ function setupCommissionCapCheck() {
     if (commissionInput) commissionInput.addEventListener('input', validateCaretakerEligibility);
 }
 
+// Populates the LGA dropdown based on the selected state, using the
+// shared NIGERIA_LGAS_BY_STATE table in app.js. Keeps the previously
+// selected LGA if one is passed (used when loading a property for edit).
+function populateLgaOptions(selectedLga) {
+    const stateSelect = document.getElementById('city');
+    const lgaSelect = document.getElementById('lga');
+    if (!stateSelect || !lgaSelect) return;
+
+    const state = stateSelect.value;
+    const lgas = (window.NIGERIA_LGAS_BY_STATE && window.NIGERIA_LGAS_BY_STATE[state]) || [];
+
+    if (!state || lgas.length === 0) {
+        lgaSelect.innerHTML = '<option value="">Select state first...</option>';
+        return;
+    }
+
+    lgaSelect.innerHTML = '<option value="">Select LGA...</option>' +
+        lgas.map(l => `<option value="${l}" ${l === selectedLga ? 'selected' : ''}>${l}</option>`).join('');
+}
+
+function setupLgaFilter() {
+    const cityInput = document.getElementById('city');
+    if (cityInput) cityInput.addEventListener('change', () => populateLgaOptions());
+}
+
 // Live preview of Service/Repair Fee (10%) and, for agents, their own
 // chosen Commission % — so they see the full picture before posting,
 // matching what Market will show.
@@ -428,12 +455,13 @@ function setupFormSubmit(userId) {
         const propertyType = document.getElementById('propertyType').value;
         const city = document.getElementById('city').value;
         const area = document.getElementById('area').value.trim();
+        const lga = document.getElementById('lga').value;
         const address = document.getElementById('address').value.trim();
         const price = document.getElementById('price').value;
         const lat = document.getElementById('latitude').value;
         const lng = document.getElementById('longitude').value;
 
-        if (!title || !propertyType || !city || !area || !address || !price || !lat || !lng) {
+        if (!title || !propertyType || !city || !lga || !area || !address || !price || !lat || !lng) {
             showError('Please fill in all required fields and drop a pin on the map.');
             return;
         }
@@ -495,6 +523,7 @@ function setupFormSubmit(userId) {
                     title: title,
                     propertyType: propertyType,
                     city: city,
+                    lga: lga,
                     area: area,
                     address: address,
                     price: parseFloat(price),
@@ -580,6 +609,7 @@ function setupFormSubmit(userId) {
                     title: title,
                     propertyType: propertyType,
                     city: city,
+                    lga: lga,
                     area: area,
                     address: address,
                     price: parseFloat(price),

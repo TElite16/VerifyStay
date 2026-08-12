@@ -23,6 +23,8 @@ async function initFeed() {
     await loadProperties();
     applyFilters();
 
+    document.getElementById('cityFilter').addEventListener('change', populateFeedLgaOptions);
+
     document.getElementById('prevPageBtn').addEventListener('click', () => {
         if (currentPage > 1) { currentPage--; renderPage(); }
     });
@@ -47,18 +49,30 @@ async function loadProperties() {
     }
 }
 
+function populateFeedLgaOptions() {
+    const state = document.getElementById('cityFilter').value;
+    const lgaSelect = document.getElementById('lgaFilter');
+    const lgas = (window.NIGERIA_LGAS_BY_STATE && window.NIGERIA_LGAS_BY_STATE[state]) || [];
+
+    lgaSelect.innerHTML = '<option value="">All LGAs</option>' +
+        lgas.map(l => `<option value="${l}">${l}</option>`).join('');
+}
+
 function applyFilters() {
     const searchTerm = document.getElementById('searchBox').value.trim().toLowerCase();
     const city = document.getElementById('cityFilter').value;
+    const lga = document.getElementById('lgaFilter').value;
 
     filteredProperties = allProperties.filter(p => {
         const matchesSearch = !searchTerm ||
             (p.title || '').toLowerCase().includes(searchTerm) ||
             (p.area || '').toLowerCase().includes(searchTerm) ||
             (p.address || '').toLowerCase().includes(searchTerm) ||
+            (p.lga || '').toLowerCase().includes(searchTerm) ||
             (p.city || '').toLowerCase().includes(searchTerm);
         const matchesCity = !city || p.city === city;
-        return matchesSearch && matchesCity;
+        const matchesLga = !lga || p.lga === lga;
+        return matchesSearch && matchesCity && matchesLga;
     });
 
     currentPage = 1;
