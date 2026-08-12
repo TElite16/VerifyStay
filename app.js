@@ -161,6 +161,23 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 window.escapeHtml = escapeHtml;
+
+// escapeHtml() is safe for displaying text in the page, but NOT safe for
+// embedding inside an onclick="func('...')" attribute — it doesn't
+// escape single or double quotes, so a name containing one (e.g. an
+// apostrophe, or someone deliberately setting a malicious display name)
+// could break out of the JS string and inject code that runs in
+// whoever views it. Use this instead whenever a value goes inside an
+// inline event handler's string arguments.
+function escapeForInlineHandler(str) {
+    return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+window.escapeForInlineHandler = escapeForInlineHandler;
 window.starString = starString;
 
 // Shared Cloudinary upload helper — used by post-property.js, login.js

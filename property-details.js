@@ -361,9 +361,9 @@ async function loadApplicants(p) {
                 <div class="review-item" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
                     <a href="profile.html?id=${a.tenantId}">${escapeHtml(tenantName)}</a>
                     <div style="display:flex;gap:6px;">
-                        <button class="btn btn-outline" style="padding:4px 10px;font-size:13px;" onclick="startTenancyAgreement('${a.tenantId}','${escapeHtml(tenantName)}')">📝 Send Agreement</button>
+                        <button class="btn btn-outline" style="padding:4px 10px;font-size:13px;" onclick="startTenancyAgreement('${a.tenantId}','${escapeForInlineHandler(tenantName)}')">📝 Send Agreement</button>
                         ${available > 0
-                            ? `<button class="btn btn-primary" style="padding:4px 10px;font-size:13px;" onclick="markOccupied('${doc.id}','${a.tenantId}','${escapeHtml(tenantName)}')">Confirm Payment &amp; Move In</button>`
+                            ? `<button class="btn btn-primary" style="padding:4px 10px;font-size:13px;" onclick="markOccupied('${doc.id}','${a.tenantId}','${escapeForInlineHandler(tenantName)}')">Confirm Payment &amp; Move In</button>`
                             : `<span style="color:#999;font-size:12px;">No units left</span>`}
                     </div>
                 </div>
@@ -715,7 +715,7 @@ function startTenancyAgreement(tenantId, tenantName) {
                 <input type="text" id="tenancyFromSignature" placeholder="Type your full legal name">
             </div>
             <div style="display:flex;gap:10px;">
-                <button class="btn btn-primary" onclick="sendTenancyAgreement('${tenantId}','${escapeHtml(tenantName)}')">Send Agreement</button>
+                <button class="btn btn-primary" onclick="sendTenancyAgreement('${tenantId}','${escapeForInlineHandler(tenantName)}')">Send Agreement</button>
                 <button class="btn btn-outline" onclick="document.getElementById('tenancyAgreementModal').remove()">Cancel</button>
             </div>
         </div>
