@@ -33,6 +33,26 @@ function chatIdFor(uidA, uidB) {
     return [uidA, uidB].sort().join('_');
 }
 
+// Message notifications link to "chat.html?with=<senderId>" — opening
+// that exact conversation is the clearest possible signal you've seen
+// them, so clear them here rather than only when visiting the separate
+// Notifications page (which most people skip entirely, going straight
+// to Messages instead — that's why the badge kept climbing).
+async function clearMessageNotificationsFrom(otherUid) {
+    try {
+        const snapshot = await db.collection('notifications')
+            .where('userId', '==', currentUser.uid)
+            .where('type', '==', 'message')
+            .where('read', '==', false)
+            .get();
+
+        const toClear = snapshot.docs.filter(doc => (doc.data().link || '').includes(`with=${otherUid}`));
+        await Promise.all(toClear.map(doc => doc.ref.update({ read: true })));
+    } catch (e) {
+        console.warn('Could not clear message notifications:', e);
+    }
+}
+
 // Shows just the time for messages sent today, "Yesterday HH:MM" for
 // yesterday, and a short date for anything older — same pattern most
 // chat apps use so timestamps stay readable without cluttering the bubble.
@@ -108,6 +128,8 @@ async function renderInbox() {
 async function openThread(otherUid, propertyId, propertyTitle) {
     const container = document.getElementById('chatContainer');
     activeChatId = chatIdFor(currentUser.uid, otherUid);
+
+    clearMessageNotificationsFrom(otherUid);
 
     try {
         const [myDoc, otherDoc] = await Promise.all([

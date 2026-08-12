@@ -392,15 +392,17 @@ function setupFeePreview() {
         const rent = parseFloat(priceInput.value) || 0;
         if (rent <= 0) { preview.innerHTML = ''; return; }
 
-        const serviceFee = Math.round(rent * 0.10);
+        const serviceFee = Math.round(rent * 0.05);
         const commissionInput = document.getElementById('commissionPercent');
         const commissionPercent = (currentRole === 'agent' && commissionInput) ? (parseFloat(commissionInput.value) || 0) : 0;
         const commissionFee = Math.round(rent * (commissionPercent / 100));
-        const total = rent + serviceFee + commissionFee;
+        const verifyStayFee = Math.round(rent * 0.05);
+        const total = rent + serviceFee + commissionFee + verifyStayFee;
 
         preview.innerHTML = `
-            Service/Repair Fee (10%): ₦${serviceFee.toLocaleString()}
+            Service/Repair Fee (5%): ₦${serviceFee.toLocaleString()}
             ${currentRole === 'agent' ? `<br>Your Commission (${commissionPercent}%): ₦${commissionFee.toLocaleString()}` : ''}
+            <br>VerifyStay Platform Fee (5%): ₦${verifyStayFee.toLocaleString()}
             <br><strong>Total shown to tenants: ₦${total.toLocaleString()}/year</strong>
         `;
     }

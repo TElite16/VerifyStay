@@ -22,6 +22,11 @@
         .rule-block li { margin-bottom: 8px; line-height: 1.5; }
         .golden-rule { background: linear-gradient(135deg, #0F2C59, #0A1D3D); color: #fff; padding: 22px 24px; border-radius: 10px; margin-bottom: 28px; text-align: center; }
         .golden-rule strong { color: #E8C547; font-size: 18px; }
+        .fee-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .fee-table td { padding: 6px 4px; border-bottom: 1px solid #e5e5e5; font-size: 14px; }
+        .fee-table td:last-child { text-align: right; font-weight: 600; }
+        .toc { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 16px 20px; margin-bottom: 28px; }
+        .toc a { display: block; color: #0F2C59; text-decoration: none; padding: 3px 0; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -45,45 +50,113 @@
             <p style="margin-top:8px; font-size: 14px; opacity: 0.9;">Every rule below exists to protect this one principle.</p>
         </div>
 
-        <div class="rule-block">
+        <div class="toc">
+            <a href="#landlords">👑 For Landlords</a>
+            <a href="#agents">🧑‍💼 For Agents</a>
+            <a href="#tenants">🏠 For Tenants</a>
+            <a href="#fees">💰 Fees &amp; Pricing</a>
+            <a href="#escrow">🔒 Payment &amp; Escrow</a>
+            <a href="#caretaker">🤝 Caretaker Role</a>
+            <a href="#agreements">📝 Digital Agreements</a>
+            <a href="#trust">🚩 Flags, Bans &amp; Trust</a>
+            <a href="#listings">🏘️ Listings &amp; Verification</a>
+        </div>
+
+        <div class="rule-block" id="landlords">
             <h3>👑 Landlords</h3>
             <ol>
                 <li>Follow all VerifyStay platform rules at all times.</li>
-                <li>Only list properties you legally own or manage — documents are reviewed manually before any listing goes live.</li>
-                <li>Keep your listing information accurate; report changes (rent, availability) promptly.</li>
-                <li>If you authorize an agent to list on your behalf, you may withdraw that authorization after a minimum of 6 months.</li>
-                <li>All communication and rent agreements must happen through the app — this is what keeps you protected if a dispute arises.</li>
+                <li>Only list properties you legally own or manage. Listings go live immediately, but every listing's documents are still checked afterward — if something doesn't match up, the listing comes down and an admin flag is added to your account.</li>
+                <li>Keep your listing information accurate; update rent, availability, and unit counts promptly.</li>
+                <li>You can list a property yourself, or hand day-to-day management to an agent through a signed Caretaker Agreement (see below) — either way, you stay the account owner.</li>
+                <li>All communication and rent agreements must happen through the app — this is what keeps you protected if a dispute arises, and what makes escrow payment protection possible at all.</li>
             </ol>
         </div>
 
-        <div class="rule-block">
+        <div class="rule-block" id="agents">
             <h3>🧑‍💼 Agents</h3>
             <ol>
-                <li>Follow both the landlord's instructions (for properties you list on their behalf) and VerifyStay platform rules.</li>
-                <li>Never deal with a tenant or landlord outside the app once you've connected through VerifyStay — this is grounds for suspension.</li>
+                <li>Follow both the landlord's instructions (for properties you manage on their behalf) and VerifyStay's platform rules.</li>
+                <li>Never deal with a tenant or landlord outside the app once you've connected through VerifyStay — this is grounds for an admin flag and possible suspension.</li>
+                <li>You set your own commission percentage when listing or accepting a Caretaker Agreement. Staying at or under your state's commission cap unlocks the <strong>Caretaker Role</strong> — a recurring, protected income arrangement (see below). Charging above the cap means you can still list and manage properties, just without that protection.</li>
                 <li>Represent properties honestly. A property that doesn't match its listed description can be reported and investigated.</li>
-                <li>If listing for a landlord without their direct account, you must have their name, phone number, and their authorization on file.</li>
-                <li>Repeated rule violations lead to probation, then possible account suspension for a period depending on severity.</li>
+                <li>Repeated rule violations lead to admin flags, then suspension — see Flags &amp; Bans below.</li>
             </ol>
         </div>
 
-        <div class="rule-block">
+        <div class="rule-block" id="tenants">
             <h3>🏠 Tenants</h3>
             <ol>
                 <li>Follow the agent's, landlord's, and VerifyStay's rules when engaging with a property.</li>
-                <li>Report any property that doesn't match its description or address — this protects future tenants too.</li>
-                <li>Report any agent or landlord who asks you to deal outside the app.</li>
-                <li>Be respectful during negotiations and disputes — abusive language can lock your access to a chat thread.</li>
-                <li>Keep proof of all agreements (screenshots, receipts) made through the app.</li>
+                <li>You must be logged in to browse listings — this keeps the marketplace limited to verified, accountable accounts.</li>
+                <li>Report any property that doesn't match its description or address, and report any agent or landlord who asks you to deal outside the app.</li>
+                <li>Log repair requests through the app, not informally — this also affects your Service/Repair Fee rate at renewal (see Fees below).</li>
+                <li>Keep proof of all agreements (they're saved in your <a href="agreements.html">My Agreements</a> page automatically once signed).</li>
             </ol>
         </div>
 
-        <div class="rule-block">
-            <h3>⚠️ What happens if a rule is broken?</h3>
+        <div class="rule-block" id="fees">
+            <h3>💰 Fees &amp; Pricing</h3>
+            <p>Every listing shows the full cost up front — never just the bare rent:</p>
+            <table class="fee-table">
+                <tr><td>House Rent</td><td>Set by the landlord/agent</td></tr>
+                <tr><td>Service/Repair Fee</td><td>5% of rent (drops to 2.5% at renewal if you logged 0-1 repair requests all year)</td></tr>
+                <tr><td>Agent Commission</td><td>Agent-chosen % — only on agent-listed or caretaker-managed properties</td></tr>
+                <tr><td>VerifyStay Platform Fee</td><td>5% of rent — covers escrow/transaction costs plus platform upkeep</td></tr>
+            </table>
+            <p style="margin-top:10px; font-size: 14px; color: #666;">Multi-unit buildings (e.g. one building with 12 identical flats) show live availability — "9 of 12 units available" — updated automatically as units fill up or free up.</p>
+        </div>
+
+        <div class="rule-block" id="escrow">
+            <h3>🔒 Payment &amp; Escrow</h3>
+            <p><strong>Not yet connected to a real payment provider</strong> — this section describes the intended flow, currently running in demo mode with no real money movement, ready to switch on once a licensed escrow provider is integrated.</p>
+            <ol>
+                <li>Once a tenancy agreement is signed by both sides, the tenant pays the full amount shown into escrow.</li>
+                <li>Funds are held — for everyone, including VerifyStay's share — until the tenant confirms they've received keys and checked in.</li>
+                <li>Tapping <strong>"I've Checked In"</strong> releases the held funds to the landlord, agent (if any), and VerifyStay.</li>
+                <li>Tapping <strong>"Request Refund"</strong> at any point before check-in reverses the full amount back to the tenant. This option disappears once check-in is confirmed — anything wrong after that point goes through the normal dispute process instead.</li>
+            </ol>
+        </div>
+
+        <div class="rule-block" id="caretaker">
+            <h3>🤝 Caretaker Role</h3>
+            <p>A protected, recurring arrangement for agents managing a property long-term:</p>
+            <ol>
+                <li>Only available if the agent's commission is at or below the cap for that property's state.</li>
+                <li>If a landlord ends the arrangement before a renewal, the agent is still owed a pro-rated share for the months they served — calculated as <em>(months served ÷ 12) × commission % × the next actual rent payment</em>, not an old or estimated rent.</li>
+                <li>That pro-rated amount becomes due automatically the moment the property's next rent renewal is recorded — even if a different agent has since taken over.</li>
+                <li>A property with an unpaid caretaker debt can't have the Caretaker Role reactivated until that debt is settled.</li>
+            </ol>
+        </div>
+
+        <div class="rule-block" id="agreements">
+            <h3>📝 Digital Agreements</h3>
+            <ol>
+                <li>Caretaker handoffs (landlord → agent) and tenancy agreements (landlord/agent → tenant) are prepared in-app from a template, then sent for the other party to review.</li>
+                <li>Accepting an agreement requires typing your full legal name as your e-signature — saved with a timestamp as part of the record.</li>
+                <li>You can Accept, Decline, or ask to Renegotiate (which opens a direct chat to discuss terms before a new agreement is sent).</li>
+                <li>All your agreements — sent and received — are always visible in <a href="agreements.html">My Agreements</a>.</li>
+            </ol>
+        </div>
+
+        <div class="rule-block" id="trust">
+            <h3>🚩 Flags, Bans &amp; Trust</h3>
             <ul>
-                <li><strong>Dealing outside the app:</strong> First offense = warning + temporary suspension. Repeat offenses = longer suspension, up to permanent removal.</li>
-                <li><strong>False or mismatched listings:</strong> Property is flagged, hidden from search, and investigated before being reinstated or removed.</li>
-                <li><strong>Abusive conduct in disputes:</strong> Chat access may be locked and the case escalated for manual review.</li>
+                <li><strong>Red flags</strong> are user-submitted reports (against a listing or a person) — public, visible on anyone's profile, but never reveal who filed them.</li>
+                <li><strong>Black flags</strong> (admin flags) are issued by VerifyStay after reviewing a confirmed problem — private, visible only to the account owner.</li>
+                <li>3 black flags = a suspension: 2 weeks the first time, 4 weeks the second, 6 the third, and so on.</li>
+                <li>Every profile — tenant, agent, or landlord — is publicly viewable, so anyone can check ratings, red flags, and verification status before dealing with someone.</li>
+                <li>Landlords/agents can rate tenants after renting to them, the same way tenants rate properties.</li>
+            </ul>
+        </div>
+
+        <div class="rule-block" id="listings">
+            <h3>🏘️ Listings &amp; Verification</h3>
+            <ul>
+                <li>Listings go live immediately — no waiting for approval.</li>
+                <li>Every new (or edited) listing shows a "Not yet verified" badge for the first 4 hours, then it disappears automatically. Documents are still checked behind the scenes during that window and after.</li>
+                <li>Required at posting: property photo, building name, and a utility bill as proof of address.</li>
+                <li>If a listing is later found to be false or misleading, it comes down and the account gets an admin (black) flag.</li>
             </ul>
         </div>
     </div>

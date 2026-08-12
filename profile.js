@@ -104,6 +104,20 @@ async function renderOwnProfile() {
                 <input type="text" id="editSignature" value="${escapeHtml(data.signatureName || '')}" placeholder="Type your full legal name">
                 <small style="color:#666;">Used to sign agreements in the app (caretaker contracts, tenancy agreements). Typing your name here counts as your signature when you accept an agreement.</small>
             </div>
+
+            <div class="form-group" style="background:#F7F8FA;border-radius:8px;padding:14px;">
+                <p style="font-weight:600;margin-bottom:4px;">🏦 Payment Details</p>
+                <p style="font-size:13px;color:#666;margin-bottom:10px;">${role === 'tenant'
+                    ? 'Used to refund you if you\'re ever owed money back — never shown to anyone else.'
+                    : 'Where rent/commission payments will be sent once in-app payment collection is live. Never shown publicly — only you see this.'}</p>
+                <label>Bank Name</label>
+                <input type="text" id="editBankName" value="${escapeHtml(data.bankName || '')}" placeholder="e.g., GTBank" style="margin-bottom:10px;">
+                <label>Account Number</label>
+                <input type="text" id="editAccountNumber" value="${escapeHtml(data.accountNumber || '')}" placeholder="0123456789" style="margin-bottom:10px;">
+                <label>Account Name</label>
+                <input type="text" id="editAccountName" value="${escapeHtml(data.accountName || '')}" placeholder="Name on the account">
+            </div>
+
             <button class="btn btn-primary" style="margin-top:16px;" onclick="saveProfile()">Save Changes</button>
             <div id="successMessage" class="success-message">✅ Profile updated.</div>
 
@@ -146,9 +160,19 @@ async function saveProfile() {
     const name = document.getElementById('editName').value.trim();
     const gender = document.getElementById('editGender').value;
     const signatureName = document.getElementById('editSignature').value.trim();
+    const bankName = document.getElementById('editBankName').value.trim();
+    const accountNumber = document.getElementById('editAccountNumber').value.trim();
+    const accountName = document.getElementById('editAccountName').value.trim();
     if (!name) { alert('Name cannot be empty.'); return; }
     try {
-        await db.collection('users').doc(currentUser.uid).update({ name: name, gender: gender, signatureName: signatureName });
+        await db.collection('users').doc(currentUser.uid).update({
+            name: name,
+            gender: gender,
+            signatureName: signatureName,
+            bankName: bankName,
+            accountNumber: accountNumber,
+            accountName: accountName
+        });
         document.getElementById('successMessage').style.display = 'block';
     } catch (error) {
         console.error('Error saving profile:', error);

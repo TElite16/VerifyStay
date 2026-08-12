@@ -127,6 +127,7 @@ async function injectSideDrawer(user) {
         <a class="drawer-link" href="dashboard.html#properties">📋 ${myListingsLabel}</a>
         <a class="drawer-link" href="feed.html">${role === 'tenant' ? '🔍 Browse Properties' : '🏬 Market'}</a>
         <a class="drawer-link" href="profile.html">👤 My Profile</a>
+        <a class="drawer-link" href="agreements.html">📝 My Agreements</a>
 
         <div class="drawer-section-label">Help &amp; Support</div>
         <a class="drawer-link" href="rules.html">📜 Platform Rules</a>
@@ -288,7 +289,7 @@ window.getUnitsInfo = getUnitsInfo;
 //     qualify for the Caretaker Role, see getCommissionCap)
 function getPriceBreakdown(p, serviceFeePercent) {
     const rent = p.price || 0;
-    const feePercent = (typeof serviceFeePercent === 'number') ? serviceFeePercent : 10;
+    const feePercent = (typeof serviceFeePercent === 'number') ? serviceFeePercent : 5;
     const serviceFee = Math.round(rent * (feePercent / 100));
 
     // Commission applies either when an agent posted the listing directly,
@@ -302,10 +303,28 @@ function getPriceBreakdown(p, serviceFeePercent) {
             ? (typeof p.caretakerCommissionPercent === 'number' ? p.caretakerCommissionPercent : 10)
             : 0;
     const commissionFee = (isAgentListing || hasCaretaker) ? Math.round(rent * (commissionPercent / 100)) : 0;
-    const total = rent + serviceFee + commissionFee;
-    return { rent, serviceFee, serviceFeePercent: feePercent, commissionFee, commissionPercent, total, isAgentListing: isAgentListing || hasCaretaker };
+
+    // VerifyStay's platform fee — 5% of rent, covers escrow/transaction
+    // processing costs plus platform revenue. Held in escrow alongside
+    // everyone else's share, released only on check-in (see escrow flow).
+    const verifyStayFeePercent = 5;
+    const verifyStayFee = Math.round(rent * (verifyStayFeePercent / 100));
+
+    const total = rent + serviceFee + commissionFee + verifyStayFee;
+    return {
+        rent, serviceFee, serviceFeePercent: feePercent,
+        commissionFee, commissionPercent,
+        verifyStayFee, verifyStayFeePercent,
+        total, isAgentListing: isAgentListing || hasCaretaker
+    };
 }
 window.getPriceBreakdown = getPriceBreakdown;
+
+// Single switch for the whole app — flip to true only once a real
+// escrow provider (e.g. Vesicash) is actually integrated with real API
+// credentials. Referenced by contract.js and property-details.js so
+// there's exactly one place to turn this on later.
+window.ESCROW_LIVE = false;
 
 // Compact one-line version for listing cards (Market/Dashboard tiles) —
 // full line-by-line breakdown is reserved for the property detail page,

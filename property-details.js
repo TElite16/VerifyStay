@@ -70,9 +70,15 @@ function renderProperty() {
                     <div style="display:flex;justify-content:space-between;padding:4px 0;color:#666;font-size:14px;">
                         <span>Agent Commission (${b.commissionPercent}%)</span><span>₦${b.commissionFee.toLocaleString()}</span>
                     </div>` : ''}
+                    <div style="display:flex;justify-content:space-between;padding:4px 0;color:#666;font-size:14px;">
+                        <span>VerifyStay Platform Fee (${b.verifyStayFeePercent}%)</span><span>₦${b.verifyStayFee.toLocaleString()}</span>
+                    </div>
                     <div style="display:flex;justify-content:space-between;padding:8px 0 0;margin-top:4px;border-top:1px solid #ddd;font-weight:700;">
                         <span>Total (first year)</span><span>₦${b.total.toLocaleString()}</span>
                     </div>
+                    <p style="font-size:12px;color:#666;margin-top:6px;">${window.ESCROW_LIVE
+                        ? '🔒 Held in escrow until you check in — refundable in full before then.'
+                        : 'Payment is arranged directly with the landlord/agent for now — in-app escrow protection is coming soon.'}</p>
                     <p id="repairDiscountNote" style="font-size:12px;color:#2e7d32;margin-top:6px;"></p>
                 `;
             })()}
@@ -134,10 +140,12 @@ function renderProperty() {
 
     if (currentUserRole === 'tenant') { attachStarInput(); loadExistingReview(); checkRepairDiscount(); }
     loadListedBySection(p);
-    if (currentUser && p.ownerId === currentUser.uid) {
+    const isOwner = currentUser && p.ownerId === currentUser.uid;
+    const isCaretaker = currentUser && p.caretakerRoleActive && p.caretakerAgentId === currentUser.uid;
+    if (isOwner || isCaretaker) {
         loadApplicants(p);
         loadRenewalSection(p);
-        if (p.ownerRole === 'landlord') loadCaretakerAgreementSection(p);
+        if (isOwner && p.ownerRole === 'landlord') loadCaretakerAgreementSection(p);
     }
 }
 
@@ -181,8 +189,8 @@ async function checkRepairDiscount() {
             .get();
         const count = snapshot.size;
         note.textContent = count <= 1
-            ? `✅ You've logged ${count} repair request${count === 1 ? '' : 's'} — your Service/Repair Fee stays at 5% next renewal.`
-            : `You've logged ${count} repair requests — Service/Repair Fee will be the standard 10% next renewal.`;
+            ? `✅ You've logged ${count} repair request${count === 1 ? '' : 's'} — your Service/Repair Fee drops to 2.5% next renewal.`
+            : `You've logged ${count} repair requests — Service/Repair Fee will be the standard 5% next renewal.`;
     } catch (e) {
         console.warn('Could not check repair discount:', e);
     }
@@ -350,11 +358,14 @@ async function loadApplicants(p) {
                 return `<div class="review-item">✅ <a href="profile.html?id=${a.tenantId}">${escapeHtml(tenantName)}</a> — moved in</div>`;
             }
             return `
-                <div class="review-item" style="display:flex;justify-content:space-between;align-items:center;">
+                <div class="review-item" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
                     <a href="profile.html?id=${a.tenantId}">${escapeHtml(tenantName)}</a>
-                    ${available > 0
-                        ? `<button class="btn btn-primary" style="padding:4px 10px;font-size:13px;" onclick="markOccupied('${doc.id}','${a.tenantId}','${escapeHtml(tenantName)}')">Confirm Payment &amp; Move In</button>`
-                        : `<span style="color:#999;font-size:12px;">No units left</span>`}
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn btn-outline" style="padding:4px 10px;font-size:13px;" onclick="startTenancyAgreement('${a.tenantId}','${escapeHtml(tenantName)}')">📝 Send Agreement</button>
+                        ${available > 0
+                            ? `<button class="btn btn-primary" style="padding:4px 10px;font-size:13px;" onclick="markOccupied('${doc.id}','${a.tenantId}','${escapeHtml(tenantName)}')">Confirm Payment &amp; Move In</button>`
+                            : `<span style="color:#999;font-size:12px;">No units left</span>`}
+                    </div>
                 </div>
             `;
         }));
@@ -656,6 +667,106 @@ async function sendCaretakerAgreement() {
     }
 }
 window.sendCaretakerAgreement = sendCaretakerAgreement;
+
+// =====================================================================
+// TENANCY AGREEMENTS — the landlord (or assigned caretaker agent)
+// sends a lease agreement directly to a specific applicant. Reuses the
+// exact same contracts system as the Caretaker Agreement above.
+// =====================================================================
+const TENANCY_CONTRACT_TEMPLATE = (propertyTitle, rent, serviceFee, commissionFee) => `TENANCY AGREEMENT
+
+Property: ${propertyTitle}
+Annual Rent: ₦${rent.toLocaleString()}
+Service/Repair Fee: ₦${serviceFee.toLocaleString()}
+${commissionFee ? `Agent Commission: ₦${commissionFee.toLocaleString()}\n` : ''}Total: ₦${(rent + serviceFee + commissionFee).toLocaleString()} per year
+
+The Tenant agrees to:
+1. Pay the above amounts in full before move-in, through the VerifyStay platform.
+2. Use the property for residential purposes only, keeping it in good condition.
+3. Report any damage or needed repairs promptly through the app.
+4. Not sublet the property without the Landlord/Agent's written consent.
+5. Vacate at the end of the lease term unless renewed.
+
+The Landlord/Agent agrees to:
+1. Provide a property matching the listing's description and condition.
+2. Address reported repair issues in a reasonable timeframe.
+3. Give reasonable notice before any inspection visits.
+4. Return any applicable deposit per the terms agreed at signing.
+
+Both parties agree this record, once signed by both, serves as their tenancy agreement for the property described above.`;
+
+function startTenancyAgreement(tenantId, tenantName) {
+    const b = getPriceBreakdown(propertyData);
+    const terms = TENANCY_CONTRACT_TEMPLATE(propertyData.title, b.rent, b.serviceFee, b.commissionFee);
+
+    const modal = document.createElement('div');
+    modal.id = 'tenancyAgreementModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(10,29,61,0.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML = `
+        <div style="background:#fff;border-radius:12px;padding:20px;max-width:500px;width:100%;max-height:85vh;overflow-y:auto;">
+            <h3 style="font-family:'Fraunces',serif;margin-bottom:10px;">Send Tenancy Agreement to ${escapeHtml(tenantName)}</h3>
+            <div class="form-group">
+                <label>Agreement Terms</label>
+                <textarea id="tenancyTerms" rows="12" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-family:monospace;font-size:12px;">${terms}</textarea>
+                <div class="help-text">Pre-filled from the property's current pricing — edit any part before sending.</div>
+            </div>
+            <div class="form-group">
+                <label>Your Signature</label>
+                <input type="text" id="tenancyFromSignature" placeholder="Type your full legal name">
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button class="btn btn-primary" onclick="sendTenancyAgreement('${tenantId}','${escapeHtml(tenantName)}')">Send Agreement</button>
+                <button class="btn btn-outline" onclick="document.getElementById('tenancyAgreementModal').remove()">Cancel</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    db.collection('users').doc(currentUser.uid).get().then(doc => {
+        if (doc.exists && doc.data().signatureName) {
+            document.getElementById('tenancyFromSignature').value = doc.data().signatureName;
+        }
+    });
+}
+window.startTenancyAgreement = startTenancyAgreement;
+
+async function sendTenancyAgreement(tenantId, tenantName) {
+    const terms = document.getElementById('tenancyTerms').value.trim();
+    const fromSignature = document.getElementById('tenancyFromSignature').value.trim();
+    if (!terms || !fromSignature) {
+        alert('Please fill in the terms and your signature.');
+        return;
+    }
+
+    try {
+        const contractRef = await db.collection('contracts').add({
+            type: 'tenancy',
+            propertyId: propertyId,
+            propertyTitle: propertyData.title,
+            fromUserId: currentUser.uid,
+            fromRole: currentUserRole,
+            toUserId: tenantId,
+            toUserName: tenantName,
+            commissionPercent: null,
+            terms: terms,
+            status: 'pending',
+            fromSignature: fromSignature,
+            fromSignedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            toSignature: null,
+            toSignedAt: null,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await createNotification(tenantId, 'contract', `${propertyData.title}: Tenancy agreement sent for your review`, `contract.html?id=${contractRef.id}`);
+
+        document.getElementById('tenancyAgreementModal').remove();
+        alert('Agreement sent!');
+    } catch (error) {
+        console.error('Error sending tenancy agreement:', error);
+        alert('Could not send agreement: ' + error.message);
+    }
+}
+window.sendTenancyAgreement = sendTenancyAgreement;
 
 async function adjustUnits(delta) {
     if (!propertyData || !currentUser || propertyData.ownerId !== currentUser.uid) return;
