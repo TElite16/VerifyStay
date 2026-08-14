@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>if(localStorage.getItem("vsDarkMode")==="true")document.documentElement.classList.add("dark-mode");</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - VerifyStay</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0F2C59">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <style>
+        .settings-container { max-width: 560px; margin: 20px auto; padding: 0 16px; }
+        .settings-group { background: var(--white); border-radius: 10px; padding: 4px 0; margin-bottom: 20px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); }
+        .settings-group h3 { padding: 14px 18px 4px; font-family: 'Fraunces', serif; font-size: 15px; color: var(--navy); }
+        .setting-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 18px; border-top: 1px solid rgba(0,0,0,0.06);
+        }
+        .setting-row .label { font-weight: 500; }
+        .setting-row .desc { font-size: 12px; color: #888; margin-top: 2px; }
+        .toggle-switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; cursor: pointer; inset: 0; background-color: #ccc;
+            border-radius: 26px; transition: 0.2s;
+        }
+        .toggle-slider:before {
+            position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
+            background-color: white; border-radius: 50%; transition: 0.2s;
+        }
+        input:checked + .toggle-slider { background-color: var(--navy); }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+        .status-note { font-size: 12px; color: #888; padding: 0 18px 14px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="dashboard.html" class="logo" style="text-decoration:none;"><svg width="26" height="26" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><circle cx="100" cy="100" r="96" fill="#0F2C59"/><polygon points="60,96 100,58 140,96" fill="#E8C547"/><rect x="68" y="96" width="64" height="48" rx="3" fill="#F7F8FA"/><rect x="92" y="118" width="16" height="26" rx="2" fill="#0F2C59"/><circle cx="146" cy="138" r="30" fill="#C9A227" stroke="#F7F8FA" stroke-width="5"/><path d="M133,138 L143,148 L161,127" fill="none" stroke="#F7F8FA" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg> VerifyStay</a>
+            <div class="nav-links">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="rules.html">Rules</a>
+                <a href="#" onclick="logout()" class="btn btn-outline">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="settings-container">
+        <h2>⚙️ Settings</h2>
+
+        <div class="settings-group">
+            <h3>Appearance</h3>
+            <div class="setting-row">
+                <div>
+                    <div class="label">🌙 Dark Mode</div>
+                    <div class="desc">Easier on the eyes at night</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <h3>Notifications</h3>
+            <div class="setting-row">
+                <div>
+                    <div class="label">🔊 Notification Sound</div>
+                    <div class="desc">Play a sound for new messages while the app is open</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="soundToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <div>
+                    <div class="label">📱 Browser Notifications</div>
+                    <div class="desc">Get notified even when this tab isn't focused</div>
+                </div>
+                <button class="btn btn-outline" id="notifPermBtn" style="padding:6px 14px;font-size:13px;">Enable</button>
+            </div>
+            <div class="status-note" id="notifPermStatus"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs (compat) — must load before firebase-config.js on EVERY page -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+    <script src="settings.js"></script>
+    <script src="pwa-register.js"></script>
+</body>
+</html>

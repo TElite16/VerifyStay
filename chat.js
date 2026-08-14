@@ -164,15 +164,19 @@ async function openThread(otherUid, propertyId, propertyTitle) {
         container.innerHTML = `
             <div class="chat-thread-header">
                 <a href="chat.html" style="text-decoration:none;color:var(--navy);font-size:20px;">←</a>
-                <div class="avatar">${otherPhoto ? `<img src="${otherPhoto}" alt="">` : '👤'}</div>
-                <div>
-                    <div style="font-weight:600;">${escapeHtml(otherName)}</div>
-                    ${propertyTitle ? `<div style="font-size:12px;color:#666;">Re: ${escapeHtml(propertyTitle)}</div>` : ''}
-                </div>
+                <a href="profile.html?id=${otherUid}" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;flex:1;">
+                    <div class="avatar">${otherPhoto ? `<img src="${otherPhoto}" alt="">` : '👤'}</div>
+                    <div>
+                        <div style="font-weight:600;">${escapeHtml(otherName)}</div>
+                        ${propertyTitle ? `<div style="font-size:12px;color:#666;">Re: ${escapeHtml(propertyTitle)}</div>` : ''}
+                    </div>
+                </a>
             </div>
             <div class="chat-thread">
                 <div class="chat-messages" id="chatMessages"><p style="color:#999;">Loading...</p></div>
                 <div class="chat-input-row">
+                    <button class="btn btn-outline" id="attachBtn" style="padding:0 14px;" title="Send a photo">📷</button>
+                    <input type="file" id="chatImageInput" accept="image/*" style="display:none;">
                     <input type="text" id="chatInput" placeholder="Type a message...">
                     <button class="btn btn-primary" id="sendBtn">Send</button>
                 </div>
@@ -183,6 +187,10 @@ async function openThread(otherUid, propertyId, propertyTitle) {
         document.getElementById('chatInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
         });
+        document.getElementById('attachBtn').addEventListener('click', () => {
+            document.getElementById('chatImageInput').click();
+        });
+        document.getElementById('chatImageInput').addEventListener('change', sendImageMessage);
 
         listenForMessages();
     } catch (error) {
@@ -206,9 +214,12 @@ function listenForMessages() {
                 const m = doc.data();
                 const mine = m.senderId === currentUser.uid;
                 const when = m.createdAt ? formatMessageTime(m.createdAt.toDate()) : 'Sending...';
+                const body = m.imageUrl
+                    ? `<img src="${m.imageUrl}" alt="Shared photo" style="max-width:100%;border-radius:10px;cursor:pointer;display:block;" onclick="openImageLightbox('${m.imageUrl}')">`
+                    : `<div>${escapeHtml(m.text)}</div>`;
                 return `
-                    <div class="msg-bubble ${mine ? 'msg-mine' : 'msg-theirs'}">
-                        <div>${escapeHtml(m.text)}</div>
+                    <div class="msg-bubble ${mine ? 'msg-mine' : 'msg-theirs'}" ${m.imageUrl ? 'style="padding:6px;"' : ''}>
+                        ${body}
                         <div class="msg-time">${when}</div>
                     </div>
                 `;
@@ -225,30 +236,55 @@ async function sendMessage() {
     if (!text) return;
     input.value = '';
 
-    const otherUid = activeChatId.split('_').find(id => id !== currentUser.uid);
-
     try {
         await db.collection('chats').doc(activeChatId).collection('messages').add({
             senderId: currentUser.uid,
             text: text,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-
-        await db.collection('chats').doc(activeChatId).update({
-            lastMessage: text,
-            lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
-            lastSenderId: currentUser.uid,
-            [`unreadBy.${otherUid}`]: firebase.firestore.FieldValue.increment(1)
-        });
-
-        // In-app notification for the recipient (shows in their bell/badge)
-        const senderDoc = await db.collection('users').doc(currentUser.uid).get();
-        const senderName = senderDoc.exists ? senderDoc.data().name : 'someone';
-        await createNotification(otherUid, 'message', `New message from ${senderName}`, `chat.html?with=${currentUser.uid}`);
+        await finishSendingMessage(text);
     } catch (error) {
         console.error('Error sending message:', error);
         alert('Could not send message: ' + error.message);
     }
+}
+
+async function sendImageMessage(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = ''; // allow picking the same file again later
+
+    try {
+        const imageUrl = await uploadFile(file, `chat-images/${activeChatId}`);
+        await db.collection('chats').doc(activeChatId).collection('messages').add({
+            senderId: currentUser.uid,
+            imageUrl: imageUrl,
+            text: '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await finishSendingMessage('📷 Photo');
+    } catch (error) {
+        console.error('Error sending image:', error);
+        alert('Could not send photo: ' + error.message);
+    }
+}
+window.sendImageMessage = sendImageMessage;
+
+// Shared by both text and image sends: updates the chat's preview/unread
+// count and notifies the recipient.
+async function finishSendingMessage(previewText) {
+    const otherUid = activeChatId.split('_').find(id => id !== currentUser.uid);
+
+    await db.collection('chats').doc(activeChatId).update({
+        lastMessage: previewText,
+        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastSenderId: currentUser.uid,
+        [`unreadBy.${otherUid}`]: firebase.firestore.FieldValue.increment(1)
+    });
+
+    const senderDoc = await db.collection('users').doc(currentUser.uid).get();
+    const senderName = senderDoc.exists ? senderDoc.data().name : 'someone';
+    await createNotification(otherUid, 'message', `New message from ${senderName}`, `chat.html?with=${currentUser.uid}`);
 }
 
 window.addEventListener('beforeunload', () => {

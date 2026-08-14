@@ -2,6 +2,22 @@
 // VERIFYSTAY - Main App Logic (index.html only)
 // =====================
 
+// ---------------- Dark mode ----------------
+// The actual class-adding happens as early as possible via a tiny inline
+// script in each page's <head> (to avoid a flash of light theme before
+// this file loads) — these functions are for the Settings page toggle
+// and anywhere else that needs to read/change the preference.
+function applyTheme() {
+    const pref = localStorage.getItem('vsDarkMode');
+    document.documentElement.classList.toggle('dark-mode', pref === 'true');
+}
+function setDarkMode(enabled) {
+    localStorage.setItem('vsDarkMode', enabled ? 'true' : 'false');
+    applyTheme();
+}
+window.setDarkMode = setDarkMode;
+applyTheme();
+
 // =====================
 // NIGERIA STATES -> LGAs (all 774, verified against official count)
 // Used for the Local Government Area filter on Feed and the LGA field
@@ -173,6 +189,7 @@ async function injectSideDrawer(user) {
         <a class="drawer-link" href="dashboard.html#properties">📋 ${myListingsLabel}</a>
         <a class="drawer-link" href="feed.html">${role === 'tenant' ? '🔍 Browse Properties' : '🏬 Market'}</a>
         <a class="drawer-link" href="profile.html">👤 My Profile</a>
+        <a class="drawer-link" href="settings.html">⚙️ Settings</a>
         <a class="drawer-link" href="agreements.html">📝 My Agreements</a>
 
         <div class="drawer-section-label">Help &amp; Support</div>
@@ -504,12 +521,19 @@ function watchNotificationBadge(uid) {
 
             if (lastKnownUnreadCount !== null && count > lastKnownUnreadCount) {
                 playNotificationSound();
+                // Find the newest notification's text for the browser popup
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') {
+                        showBrowserNotification(change.doc.data().text || 'You have a new notification');
+                    }
+                });
             }
             lastKnownUnreadCount = count;
         }, err => console.warn('Notification badge listener error:', err));
 }
 
 function playNotificationSound() {
+    if (localStorage.getItem('vsNotifSound') === 'false') return; // user turned it off in Settings
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator();
@@ -523,6 +547,33 @@ function playNotificationSound() {
         osc.stop(ctx.currentTime + 0.4);
     } catch (e) { /* audio not available, silently skip */ }
 }
+
+// Shows a real OS-level notification (works even if this tab isn't
+// focused) — only if the person has explicitly granted permission via
+// Settings. Never requests permission itself; that's a deliberate user
+// action, not something to pop up unprompted.
+function showBrowserNotification(text) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+        new Notification('VerifyStay', { body: text, icon: 'icon-192.png' });
+    } catch (e) { /* not available in this context, silently skip */ }
+}
+window.showBrowserNotification = showBrowserNotification;
+
+// Tap any image (chat photos, profile pictures) to view it full-screen.
+// Shared globally so it works the same everywhere.
+function openImageLightbox(url) {
+    let overlay = document.getElementById('vsImageLightbox');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'vsImageLightbox';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out;';
+        overlay.addEventListener('click', () => overlay.remove());
+        document.body.appendChild(overlay);
+    }
+    overlay.innerHTML = `<img src="${url}" style="max-width:100%;max-height:100%;border-radius:8px;">`;
+}
+window.openImageLightbox = openImageLightbox;
 
 function logout() {
     auth.signOut().then(() => {

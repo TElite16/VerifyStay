@@ -199,7 +199,7 @@ async function renderPublicProfile() {
 
         card.innerHTML = `
             <div class="profile-avatar-wrap">
-                <div class="profile-avatar">
+                <div class="profile-avatar" ${data.profilePictureUrl ? `onclick="openImageLightbox('${data.profilePictureUrl}')" style="cursor:zoom-in;"` : ''}>
                     ${data.profilePictureUrl ? `<img src="${data.profilePictureUrl}" alt="">` : '👤'}
                 </div>
             </div>

@@ -26,6 +26,43 @@
     --shadow-lift: 0 10px 30px rgba(15, 44, 89, 0.16);
 }
 
+/* ---------------- Dark mode ---------------- */
+/* Applied via a "dark-mode" class on <html>, set from Settings and
+   stored in localStorage. app.js applies this class as early as
+   possible on every page to avoid a flash of the light theme. */
+html.dark-mode {
+    --paper: #12151C;
+    --white: #1B1F29;
+    --ink: #E8E9ED;
+    --navy: #4A7BD8;
+    --navy-dark: #6D9AEE;
+    --gold: #E8C547;
+    --gold-bright: #F5D97A;
+    --success-bg: #16301F;
+    --danger-bg: #3A1414;
+    --warn-bg: #332900;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --shadow-lift: 0 10px 30px rgba(0, 0, 0, 0.55);
+}
+html.dark-mode body { background: var(--paper); color: var(--ink); }
+html.dark-mode .navbar,
+html.dark-mode .property-card,
+html.dark-mode .contract-card,
+html.dark-mode .notif-item,
+html.dark-mode .agreement-item,
+html.dark-mode #sideDrawer,
+html.dark-mode .auth-container,
+html.dark-mode .thread-item { background: var(--white); color: var(--ink); }
+html.dark-mode input,
+html.dark-mode select,
+html.dark-mode textarea {
+    background: var(--white); color: var(--ink); border-color: #333a4a;
+}
+html.dark-mode .msg-theirs { background: var(--white); border-color: #333a4a; }
+html.dark-mode .status-pending { background: #3a2c00; color: #ffd76a; }
+html.dark-mode .status-accepted, html.dark-mode .status-active { background: #16301f; color: #7fd99a; }
+html.dark-mode .status-declined, html.dark-mode .status-flagged { background: #3a1414; color: #ff9d94; }
+
 * {
     margin: 0;
     padding: 0;
